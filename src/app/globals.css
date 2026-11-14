@@ -1,26 +1,75 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fffaf3;
+  --foreground: #1f2430;
+  --muted: #5b6270;
+  --line: #eadfce;
+  --brand: #c2410c;
+  --brand-2: #0f766e;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-brand: var(--brand);
+  --color-brand-2: var(--brand-2);
+  --font-sans: var(--font-geist-sans), "Noto Sans", "Noto Sans Devanagari", "Noto Sans Telugu", "Noto Sans Gurmukhi", "Noto Sans SC", system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+/* ---------- reusable bits ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  padding: 0.65rem 1.25rem;
+  font-weight: 600;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  cursor: pointer;
+}
+.btn:hover:not(:disabled) { transform: translateY(-1px); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary { background: var(--brand); color: #fff; box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--brand) 70%, transparent); }
+.btn-ghost { background: #fff; color: var(--foreground); border: 1px solid var(--line); }
+.card { background: #fff; border: 1px solid var(--line); border-radius: 1.25rem; box-shadow: 0 8px 30px -18px rgba(60, 40, 10, 0.35); }
+.field {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  outline: none;
+}
+.field:focus { border-color: var(--brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 18%, transparent); }
+
+/* ---------- 3D scene helpers ---------- */
+.scene { perspective: 1100px; }
+.preserve-3d { transform-style: preserve-3d; }
+.backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+
+@keyframes floaty {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  50% { transform: translate3d(0, -18px, 0) rotate(6deg); }
+}
+.floaty { animation: floaty 7s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .floaty { animation: none; }
+  * { scroll-behavior: auto !important; }
+}
+
+@media print {
+  header, footer, .no-print { display: none !important; }
+  body { background: #fff; }
 }
