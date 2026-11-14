@@ -111,6 +111,7 @@ ${SAFETY_RULES}`,
       ambassadorId: ambassador.id,
       ambassadorName: ambassador.name,
       ownerEmail,
+      isDemo: ambassador.demo, // sites made through judge demo access are labelled demo
     });
     const certificate = await createCertificate({
       ambassadorId: ambassador.id,

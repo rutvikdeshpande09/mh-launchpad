@@ -104,6 +104,7 @@ export async function createBusiness(input: {
   ambassadorId: string;
   ambassadorName: string;
   ownerEmail: string;
+  isDemo?: boolean;
 }): Promise<Business> {
   const slug = `${slugify(input.content.businessName)}-${randomUUID().slice(0, 4)}`;
   if (!usingSupabase) {
@@ -115,7 +116,7 @@ export async function createBusiness(input: {
       photos: input.photos,
       avatarUrl: null,
       ambassadorName: input.ambassadorName,
-      isDemo: false,
+      isDemo: Boolean(input.isDemo),
       published: false, // new sites start as private drafts until approved
       createdAt: new Date().toISOString(),
     };
@@ -129,7 +130,7 @@ export async function createBusiness(input: {
     alt_lang: input.altLang,
     photos: input.photos,
     ambassador_name: input.ambassadorName,
-    is_demo: false,
+    is_demo: Boolean(input.isDemo),
   };
   let res = await admin().from("businesses").insert({ ...row, published: false }).select("*").single();
   if (res.error && /published/i.test(res.error.message)) {
