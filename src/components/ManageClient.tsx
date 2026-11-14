@@ -136,6 +136,23 @@ export default function ManageClient({ initial }: { initial: Business }) {
     }
   }
 
+  async function setVisibility(published: boolean) {
+    setBusy(true);
+    setMessage(null);
+    try {
+      await postJson("/api/publish", { slug: business.slug, published }, headers());
+      setBusiness((b) => ({ ...b, published }));
+      setMessage({
+        kind: "ok",
+        text: published ? "✅ Your site is now public." : "✅ Your site is hidden. Visitors can no longer see it. You can publish it again anytime.",
+      });
+    } catch (e) {
+      setMessage({ kind: "err", text: e instanceof Error ? e.message : "Could not change visibility." });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function saveAvatar() {
     if (!cropSrc || !area) return;
     setBusy(true);
@@ -325,6 +342,28 @@ export default function ManageClient({ initial }: { initial: Business }) {
           </div>
         </section>
       </div>
+
+      {/* visibility */}
+      <section className="card mt-8 flex flex-wrap items-center justify-between gap-4 p-6">
+        <div>
+          <h2 className="text-lg font-bold">Site visibility</h2>
+          <p className="mt-1 text-sm text-muted">
+            Your site is currently{" "}
+            <strong className={business.published ? "text-green-700" : "text-amber-700"}>
+              {business.published ? "public" : "hidden (not visible to visitors)"}
+            </strong>
+            . You are always in control: hide it any time and publish it again when you are ready.
+          </p>
+        </div>
+        <button
+          type="button"
+          className={`btn ${business.published ? "btn-ghost" : "btn-primary"}`}
+          disabled={busy}
+          onClick={() => setVisibility(!business.published)}
+        >
+          {business.published ? "Hide my site" : "Publish my site"}
+        </button>
+      </section>
 
       {/* private inbox */}
       <section className="card mt-8 p-6">

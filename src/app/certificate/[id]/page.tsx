@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import PrintButton from "@/components/PrintButton";
-import { getCertificate } from "@/lib/store";
+import { getBusiness, getCertificate } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Volunteer Service Certificate | MH Launchpad" };
@@ -13,6 +13,8 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
   const { id } = await params;
   const cert = await getCertificate(id);
   if (!cert) notFound();
+  const site = await getBusiness(cert.businessSlug);
+  const sitePublic = Boolean(site?.published);
 
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
@@ -30,9 +32,13 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
         <p className="mt-2 text-4xl font-extrabold text-brand">{cert.studentName}</p>
         <p className="mx-auto mt-6 max-w-lg text-lg">
           completed a guided interview and built a free website and digital business card for{" "}
-          <Link href={`/sites/${cert.businessSlug}`} className="font-bold underline">
-            {cert.businessName}
-          </Link>
+          {sitePublic ? (
+            <Link href={`/sites/${cert.businessSlug}`} className="font-bold underline">
+              {cert.businessName}
+            </Link>
+          ) : (
+            <span className="font-bold">{cert.businessName}</span>
+          )}
           , a local home-based business in Mountain House.
         </p>
         <p className="mt-6 text-2xl font-bold">{cert.hours} service hours claimed</p>
@@ -54,9 +60,11 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
       </div>
       <div className="mt-6 flex justify-center gap-3">
         <PrintButton />
-        <Link href={`/sites/${cert.businessSlug}`} className="btn btn-ghost no-print">
-          View the website
-        </Link>
+        {sitePublic && (
+          <Link href={`/sites/${cert.businessSlug}`} className="btn btn-ghost no-print">
+            View the website
+          </Link>
+        )}
       </div>
     </div>
   );

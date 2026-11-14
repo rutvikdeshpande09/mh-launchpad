@@ -7,6 +7,7 @@ import { LANGUAGES, getLanguage } from "@/lib/languages";
 import { canMock, mockSite } from "@/lib/mock";
 import { clientIp, rateLimit } from "@/lib/ratelimit";
 import { SiteContentSchema, normalizeContent } from "@/lib/schemas";
+import { signDraftToken } from "@/lib/preview";
 import { createBusiness, createCertificate, parseImageDataUrl, usingSupabase } from "@/lib/store";
 
 export const maxDuration = 60; // Gemini audio + structured output can take a while
@@ -104,7 +105,7 @@ ${SAFETY_RULES}`,
       businessSlug: business.slug,
       businessId: business.id,
     });
-    return Response.json({ slug: business.slug, certificateId: certificate.id });
+    return Response.json({ slug: business.slug, certificateId: certificate.id, draftToken: signDraftToken(business.slug) });
   } catch (e) {
     if (e instanceof AiConfigError) return bad(e.message, 503);
     console.error("generate-site failed", e);

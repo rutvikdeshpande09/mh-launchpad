@@ -47,6 +47,7 @@ const toBusiness = (r: Row): Business => ({
   avatarUrl: (r.avatar_url as string) ?? null,
   ambassadorName: (r.ambassador_name as string) ?? "",
   isDemo: Boolean(r.is_demo),
+  published: r.published !== false, // column may not exist before the migration: treat as published
   createdAt: r.created_at as string,
 });
 
@@ -75,11 +76,14 @@ export async function getBusiness(slug: string): Promise<Business | null> {
   return data ? toBusiness(data) : null;
 }
 
+/** Public directory: only published sites. */
 export async function listBusinesses(): Promise<Business[]> {
-  if (!usingSupabase) return [...mem.businesses.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  if (!usingSupabase) {
+    return [...mem.businesses.values()].filter((b) => b.published).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
   await ensureSeed();
   const { data } = await admin().from("businesses").select("*").order("created_at", { ascending: false }).limit(60);
-  return (data ?? []).map(toBusiness);
+  return (data ?? []).map(toBusiness).filter((b) => b.published);
 }
 
 export async function createBusiness(input: {
@@ -101,24 +105,28 @@ export async function createBusiness(input: {
       avatarUrl: null,
       ambassadorName: input.ambassadorName,
       isDemo: false,
+      published: false, // new sites start as private drafts until approved
       createdAt: new Date().toISOString(),
     };
     mem.businesses.set(slug, b);
     mem.owners.set(slug, input.ownerEmail.toLowerCase());
     return b;
   }
-  const { data, error } = await admin()
-    .from("businesses")
-    .insert({
-      slug,
-      content: input.content,
-      alt_lang: input.altLang,
-      photos: input.photos,
-      ambassador_name: input.ambassadorName,
-      is_demo: false,
-    })
-    .select("*")
-    .single();
+  const row = {
+    slug,
+    content: input.content,
+    alt_lang: input.altLang,
+    photos: input.photos,
+    ambassador_name: input.ambassadorName,
+    is_demo: false,
+  };
+  let res = await admin().from("businesses").insert({ ...row, published: false }).select("*").single();
+  if (res.error && /published/i.test(res.error.message)) {
+    // Migration not applied yet: fall back to the old behaviour (visible immediately) instead of failing.
+    console.warn("businesses.published column missing; run the migration in supabase/schema.sql");
+    res = await admin().from("businesses").insert(row).select("*").single();
+  }
+  const { data, error } = res;
   if (error || !data) throw new Error(error?.message ?? "Could not save the business");
   await admin().from("business_owners").insert({ business_id: data.id, email: input.ownerEmail.toLowerCase() });
   return toBusiness(data);
@@ -131,6 +139,18 @@ export async function updateContent(slug: string, content: SiteContent): Promise
     return;
   }
   await admin().from("businesses").update({ content }).eq("slug", slug);
+}
+
+/** Publish or hide a site. Returns false if it could not be saved. */
+export async function setPublished(slug: string, published: boolean): Promise<boolean> {
+  if (!usingSupabase) {
+    const b = mem.businesses.get(slug);
+    if (b) b.published = published;
+    return Boolean(b);
+  }
+  const { error } = await admin().from("businesses").update({ published }).eq("slug", slug);
+  if (error) console.warn("setPublished failed:", error.message);
+  return !error;
 }
 
 export async function setAvatar(slug: string, avatarUrl: string): Promise<void> {

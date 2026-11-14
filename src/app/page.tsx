@@ -84,7 +84,7 @@ export default async function Home() {
             </li>
             <li>
               Run the <Link href="/interview" className="font-semibold text-brand underline">interview</Link> (typing is fine) to
-              generate a brand-new site and a service certificate.
+              generate a brand-new <em>draft</em> site and a service certificate, then press <strong>Approve &amp; publish</strong> to make it public.
             </li>
             <li>
               Open <Link href="/manage/tamales-la-abuela" className="font-semibold text-brand underline">the owner portal</Link>,

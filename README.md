@@ -20,7 +20,7 @@ Owners keep control afterward: they can say *"Sold out of chicken tamales this w
 
 1. Open the live app and click the **demo business** (Tamales La Abuela, in English + Spanish). Try the language toggle, tilt the cards, and flip the business card.
 2. Go to **Ambassador → "Judge demo access"** (skips the school-email check).
-3. Open **Start interview**, choose a language, type short answers (or record your voice), tick the consent box, and press **Generate**. In about 30 seconds you get a new website and a service certificate.
+3. Open **Start interview**, choose a language, type short answers (or record your voice), tick the consent box, and press **Generate**. In about 30 seconds you get a private **draft** website and a service certificate; press **Approve & publish** to make it public.
 4. Open `/manage/tamales-la-abuela` → **Demo owner access**. Upload a profile photo (watch the card update) and try the AI updater: *"Sold out of chicken tamales this weekend, add Atole for $5."*
 
 The seeded business is a **fictional demo**, so the app works on first boot with no setup.
@@ -85,6 +85,7 @@ Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Framer Motion (3D til
 
 ## 🔒 Privacy and safety by design
 
+- **Drafts and an off switch.** New sites are private drafts until someone with the draft link approves them, and owners can hide their site at any time from the owner portal.
 - **Consent first.** The interview can't start without confirming the owner agreed to be interviewed, to AI processing, and to a public page.
 - **No private details published.** The AI is told never to output street addresses, phone numbers, emails or children's names; the public area is only "Mountain House, CA".
 - **Masked inquiries.** Visitors write through the site; owners read messages only in their private portal. A honeypot field and rate limiting reduce spam.

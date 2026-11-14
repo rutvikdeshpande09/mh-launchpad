@@ -24,7 +24,8 @@ export default function InterviewPage() {
   const [uploading, setUploading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [result, setResult] = useState<{ slug: string; certificateId: string } | null>(null);
+  const [result, setResult] = useState<{ slug: string; certificateId: string; draftToken: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   if (!ready) return null;
 
@@ -67,7 +68,7 @@ export default function InterviewPage() {
     setBusy(true);
     setError("");
     try {
-      const res = await postJson<{ slug: string; certificateId: string }>("/api/generate-site", {
+      const res = await postJson<{ slug: string; certificateId: string; draftToken: string }>("/api/generate-site", {
         token: session.token,
         language,
         altLanguage: effectiveAlt,
@@ -88,18 +89,32 @@ export default function InterviewPage() {
   }
 
   if (result) {
+    const draftPath = `/sites/${result.slug}?preview=${result.draftToken}`;
     return (
       <div className="mx-auto max-w-xl px-4 py-16 text-center">
-        <p className="text-6xl">🎉</p>
-        <h1 className="mt-4 text-3xl font-extrabold">The site is live!</h1>
-        <p className="mt-2 text-muted">Your certificate is ready too. Share these links with the business owner.</p>
+        <p className="text-6xl">📝</p>
+        <h1 className="mt-4 text-3xl font-extrabold">The draft is ready!</h1>
+        <p className="mt-2 text-muted">
+          It is <strong>not public yet</strong>. Open the private draft with the business owner, check every detail together, fix
+          anything wrong, and only then press <strong>Approve &amp; publish</strong>.
+        </p>
         <div className="mt-8 grid gap-3">
-          <Link href={`/sites/${result.slug}`} className="btn btn-primary">View the new website</Link>
+          <Link href={draftPath} className="btn btn-primary">1. Review the private draft</Link>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={async () => {
+              await navigator.clipboard?.writeText(`${window.location.origin}${draftPath}`).catch(() => {});
+              setCopied(true);
+            }}
+          >
+            {copied ? "✅ Link copied. Send it to the owner" : "2. Copy the draft link to send to the owner"}
+          </button>
           <Link href={`/certificate/${result.certificateId}`} className="btn btn-ghost">🏅 View your service certificate</Link>
-          <Link href={`/manage/${result.slug}`} className="btn btn-ghost">Owner portal (for the business owner)</Link>
+          <Link href={`/manage/${result.slug}`} className="btn btn-ghost">Owner portal (edit or hide the site later)</Link>
         </div>
         <p className="mt-6 text-sm text-muted">
-          Owner portal link to share: <code className="break-all">/manage/{result.slug}</code>
+          Anyone with the draft link can preview and publish, so only share it with the owner.
         </p>
       </div>
     );

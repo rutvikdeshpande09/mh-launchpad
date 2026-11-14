@@ -50,6 +50,8 @@ export interface Business {
   avatarUrl: string | null;
   ambassadorName: string;
   isDemo: boolean;
+  /** Drafts and hidden sites return 404 to the public. */
+  published: boolean;
   createdAt: string;
 }
 

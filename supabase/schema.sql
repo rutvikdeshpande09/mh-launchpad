@@ -27,8 +27,12 @@ create table if not exists public.businesses (
   avatar_url      text,
   ambassador_name text not null default '',
   is_demo         boolean not null default false,
+  published       boolean not null default true,   -- false = private draft / hidden by owner
   created_at      timestamptz not null default now()
 );
+
+-- Migration for databases created before drafts existed (safe to run more than once):
+alter table public.businesses add column if not exists published boolean not null default true;
 
 -- Owner emails live in their own table so they are never exposed with the public site.
 create table if not exists public.business_owners (
@@ -70,7 +74,7 @@ alter table public.inquiries            enable row level security;
 
 -- Public websites are readable by anyone.
 drop policy if exists "public can read businesses" on public.businesses;
-create policy "public can read businesses" on public.businesses for select using (true);
+create policy "public can read businesses" on public.businesses for select using (published = true);
 
 -- Certificates can be verified by anyone who has the (unguessable) id; they hold no email.
 drop policy if exists "public can read certificates" on public.service_certificates;
