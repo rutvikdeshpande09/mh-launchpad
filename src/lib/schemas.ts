@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ensureReadable } from "./color";
 
 /** A string in English plus the same string in the site's second language. */
 export const BiText = z.object({
@@ -136,8 +137,8 @@ export function normalizeContent(c: SiteContent): SiteContent {
     serviceArea: cap(c.serviceArea, 80),
     announcement: capBi(c.announcement, 200),
     theme: {
-      primary: safeHex(c.theme.primary, "#c2410c"),
-      accent: safeHex(c.theme.accent, "#0f766e"),
+      primary: ensureReadable(safeHex(c.theme.primary, "#c2410c")),
+      accent: ensureReadable(safeHex(c.theme.accent, "#0f766e"), "#0f766e"),
       emoji: cap(c.theme.emoji, 8) || "✨",
     },
     cardTagline: cap(c.cardTagline, 70),

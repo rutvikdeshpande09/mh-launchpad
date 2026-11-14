@@ -41,7 +41,7 @@ The seeded business is a **fictional demo**, so the app works on first boot with
 | `/owner` | Business-owner sign-up/sign-in by email link: enter your business name, pick the ambassador who will interview you, and track your requests |
 | `/interview` | 5-question interview (text or in-browser voice recording in 7 languages) + photo upload → generates the site |
 | `/sites/[slug]` | Public 3D business website, bilingual toggle, masked inquiry form |
-| `/manage/[slug]` | Owner portal: magic-link login (or demo access), profile photo cropper, live card, AI site updater, private inbox |
+| `/manage/[slug]` | Owner portal: magic-link login (or demo access), profile photo cropper, live card, colour schemes (presets or custom, auto-adjusted for readability), AI site updater, show/hide the site, private inbox |
 | `/certificate/[id]` | Printable service certificate with a verification QR code |
 
 ## 🛠 Run it locally

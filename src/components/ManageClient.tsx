@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Cropper, { type Area } from "react-easy-crop";
 import type { Business, Inquiry } from "@/lib/schemas";
 import { postJson, type AudioClip } from "@/lib/client";
+import { PRESETS, ensureReadable } from "@/lib/color";
 import AudioRecorder from "./AudioRecorder";
 import BusinessCard3D from "./BusinessCard3D";
 
@@ -48,6 +49,7 @@ export default function ManageClient({ initial }: { initial: Business }) {
   const [message, setMessage] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [draftToken, setDraftToken] = useState("");
+  const [colors, setColors] = useState({ primary: initial.content.theme.primary, accent: initial.content.theme.accent });
 
   // photo cropping
   const [cropSrc, setCropSrc] = useState<string | null>(null);
@@ -129,6 +131,7 @@ export default function ManageClient({ initial }: { initial: Business }) {
         headers(),
       );
       setBusiness((b) => ({ ...b, content: res.content }));
+      setColors({ primary: res.content.theme.primary, accent: res.content.theme.accent });
       setInstruction("");
       setAudio(null);
       setMessage({ kind: "ok", text: `✅ ${res.changeSummary}` });
@@ -156,6 +159,25 @@ export default function ManageClient({ initial }: { initial: Business }) {
     }
   }
 
+  async function saveColors() {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const res = await postJson<{ theme: Business["content"]["theme"] }>(
+        "/api/manage",
+        { slug: business.slug, action: "theme", primary: colors.primary, accent: colors.accent },
+        headers(),
+      );
+      setBusiness((b) => ({ ...b, content: { ...b.content, theme: res.theme } }));
+      setColors({ primary: res.theme.primary, accent: res.theme.accent });
+      setMessage({ kind: "ok", text: "✅ Colours saved. Your site and business card now use them." });
+    } catch (e) {
+      setMessage({ kind: "err", text: e instanceof Error ? e.message : "Could not save the colours." });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function saveAvatar() {
     if (!cropSrc || !area) return;
     setBusy(true);
@@ -173,6 +195,9 @@ export default function ManageClient({ initial }: { initial: Business }) {
   }
 
   const c = business.content;
+  // What you see is what gets saved: colours too light for white text are darkened automatically.
+  const safe = { primary: ensureReadable(colors.primary), accent: ensureReadable(colors.accent, "#0f766e") };
+  const colorsChanged = safe.primary !== c.theme.primary || safe.accent !== c.theme.accent;
 
   // ---------- signed-out view ----------
   if (!auth) {
@@ -279,8 +304,8 @@ export default function ManageClient({ initial }: { initial: Business }) {
                 tagline: c.cardTagline,
                 area: c.serviceArea,
                 emoji: c.theme.emoji,
-                primary: c.theme.primary,
-                accent: c.theme.accent,
+                primary: safe.primary,
+                accent: safe.accent,
                 avatarUrl: business.avatarUrl,
                 items: c.services.map((x) => `${x.emoji} ${x.name.en}`),
                 hours: c.hours.en,
@@ -349,6 +374,68 @@ export default function ManageClient({ initial }: { initial: Business }) {
           </div>
         </section>
       </div>
+
+      {/* site colours */}
+      <section className="card mt-8 p-6">
+        <h2 className="text-lg font-bold">Site colours</h2>
+        <p className="mt-1 text-sm text-muted">
+          Pick a colour scheme for your website and business card. Colours that are too light to read with white text are darkened automatically.
+        </p>
+
+        <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Preset colour schemes">
+          {PRESETS.map((p) => {
+            const on = ensureReadable(p.primary) === safe.primary && ensureReadable(p.accent, "#0f766e") === safe.accent;
+            return (
+              <button
+                key={p.name}
+                type="button"
+                onClick={() => setColors({ primary: p.primary, accent: p.accent })}
+                aria-pressed={on}
+                className={`flex items-center gap-2 rounded-full border-2 bg-white py-1.5 pl-1.5 pr-3 text-sm font-semibold ${on ? "border-foreground" : "border-line"}`}
+              >
+                <span className="size-6 rounded-full" style={{ background: `linear-gradient(135deg, ${p.primary}, ${p.accent})` }} />
+                {p.name}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <label className="flex items-center gap-3 text-sm font-semibold">
+            <input type="color" value={colors.primary} onChange={(e) => setColors((cl) => ({ ...cl, primary: e.target.value }))} className="size-11 cursor-pointer rounded-lg border border-line bg-white p-1" />
+            Main colour
+          </label>
+          <label className="flex items-center gap-3 text-sm font-semibold">
+            <input type="color" value={colors.accent} onChange={(e) => setColors((cl) => ({ ...cl, accent: e.target.value }))} className="size-11 cursor-pointer rounded-lg border border-line bg-white p-1" />
+            Accent colour
+          </label>
+        </div>
+
+        <div className="mt-5 overflow-hidden rounded-xl" style={{ background: `linear-gradient(135deg, ${safe.primary}, ${safe.accent})` }} aria-label="Preview of your site header">
+          <div className="px-5 py-6 text-white">
+            <p className="text-xs font-semibold uppercase tracking-widest opacity-80">Preview</p>
+            <p className="mt-1 text-2xl font-black">{c.businessName}</p>
+            <p className="text-sm opacity-90">{c.tagline.en}</p>
+            <span className="mt-3 inline-block rounded-full bg-white px-4 py-1.5 text-sm font-bold" style={{ color: safe.primary }}>
+              Send us a message
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button type="button" className="btn btn-primary" disabled={busy || !colorsChanged} onClick={saveColors}>
+            {busy && <Loader2 className="animate-spin" size={16} />} Save colours
+          </button>
+          {colorsChanged && (
+            <button type="button" className="btn btn-ghost" onClick={() => setColors({ primary: c.theme.primary, accent: c.theme.accent })}>
+              Undo
+            </button>
+          )}
+          {(safe.primary !== colors.primary.toLowerCase() || safe.accent !== colors.accent.toLowerCase()) && (
+            <p className="text-sm text-amber-800">One colour was darkened so white text stays readable.</p>
+          )}
+        </div>
+      </section>
 
       {/* visibility */}
       <section className="card mt-8 flex flex-wrap items-center justify-between gap-4 p-6">
