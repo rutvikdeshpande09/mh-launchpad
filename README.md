@@ -12,7 +12,7 @@ publish:
 
 Owners keep control afterward: they can say *"Sold out of samosas this weekend, add Mango Lassi for $5"* and the live site updates.
 
-> **Links:** Live app: _add your Vercel URL here_ · Demo video: _add your Google Drive link here_
+> **Live app:** https://mh-launchpad.vercel.app · **Code:** https://github.com/rutvikdeshpande09/mh-launchpad · **Demo video:** _add your Google Drive link here_
 
 ---
 
@@ -41,7 +41,7 @@ The two seeded businesses are **fictional demos**, so the app works on first boo
 Requires Node 20+.
 
 ```bash
-git clone <this repo>
+git clone https://github.com/rutvikdeshpande09/mh-launchpad.git
 cd mh-launchpad
 npm install
 cp .env.example .env.local     # then add your GEMINI_API_KEY
