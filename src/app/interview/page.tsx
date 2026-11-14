@@ -2,10 +2,12 @@
 
 import { ImagePlus, Loader2, X } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import AudioRecorder from "@/components/AudioRecorder";
 import { QUESTIONS } from "@/lib/content";
 import { LANGUAGES } from "@/lib/languages";
+import type { InterviewRequest } from "@/lib/schemas";
 import { postJson, resizeImage, useAmbassador, type AudioClip } from "@/lib/client";
 
 interface AnswerState {
@@ -14,7 +16,20 @@ interface AnswerState {
 }
 
 export default function InterviewPage() {
+  return (
+    <Suspense fallback={null}>
+      <Interview />
+    </Suspense>
+  );
+}
+
+type SafeRequest = Omit<InterviewRequest, "ownerEmail">;
+
+function Interview() {
+  const requestId = useSearchParams().get("request");
   const { session, ready } = useAmbassador();
+  const [request, setRequest] = useState<SafeRequest | null>(null);
+  const [requestError, setRequestError] = useState("");
   const [language, setLanguage] = useState("en");
   const [altLanguage, setAltLanguage] = useState("es");
   const [ownerEmail, setOwnerEmail] = useState("");
@@ -26,6 +41,29 @@ export default function InterviewPage() {
   const [error, setError] = useState("");
   const [result, setResult] = useState<{ slug: string; certificateId: string; draftToken: string } | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // When answering an owner's request, load it and preselect the owner's language.
+  const token = session?.token;
+  useEffect(() => {
+    if (!requestId || !token) return;
+    let cancelled = false;
+    fetch("/api/ambassador", { headers: { "x-ambassador-token": token } })
+      .then((r) => r.json())
+      .then((d: { requests?: SafeRequest[] }) => {
+        if (cancelled) return;
+        const r = d.requests?.find((x) => x.id === requestId);
+        if (!r) setRequestError("We couldn't find that request on your account.");
+        else if (r.status !== "accepted") setRequestError("This request isn't open for an interview (it may be pending, declined, or already done).");
+        else {
+          setRequest(r);
+          setLanguage(r.ownerLanguage);
+        }
+      })
+      .catch(() => !cancelled && setRequestError("Couldn't load the request."));
+    return () => {
+      cancelled = true;
+    };
+  }, [requestId, token]);
 
   if (!ready) return null;
 
@@ -42,7 +80,7 @@ export default function InterviewPage() {
 
   const spoken = LANGUAGES.find((l) => l.code === language)!;
   const effectiveAlt = language === "en" ? altLanguage : language;
-  const complete = answers.every((a) => a.text.trim() || a.audio) && consent && /\S+@\S+\.\S+/.test(ownerEmail);
+  const complete = answers.every((a) => a.text.trim() || a.audio) && consent && (request ? true : /\S+@\S+\.\S+/.test(ownerEmail));
 
   const setAnswer = (i: number, patch: Partial<AnswerState>) => setAnswers((prev) => prev.map((a, j) => (j === i ? { ...a, ...patch } : a)));
 
@@ -72,7 +110,7 @@ export default function InterviewPage() {
         token: session.token,
         language,
         altLanguage: effectiveAlt,
-        ownerEmail: ownerEmail.trim(),
+        ...(request ? { requestId: request.id } : { ownerEmail: ownerEmail.trim() }),
         consent: true,
         photos,
         answers: answers.map((a) => ({
@@ -127,6 +165,18 @@ export default function InterviewPage() {
         Hi {session.name}! Ask the owner each question. They can speak (record a voice answer) or you can type what they say.
       </p>
 
+      {requestId && requestError && (
+        <p role="alert" className="mt-6 rounded-lg bg-red-50 p-3 text-sm text-red-800">
+          {requestError} <Link href="/ambassador" className="font-semibold underline">Back to your requests</Link>
+        </p>
+      )}
+      {request && (
+        <p className="mt-6 rounded-xl bg-teal-50 p-4 text-sm text-teal-900">
+          Interviewing for <strong>{request.businessName}</strong>, who asked for you by name. The owner&apos;s account is linked
+          automatically, so you don&apos;t need their email.
+        </p>
+      )}
+
       <section className="card mt-8 space-y-4 p-6">
         <h2 className="font-bold">1. Before you start</h2>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -156,11 +206,13 @@ export default function InterviewPage() {
             <p className="self-end text-sm text-muted">The site will be in English and {spoken.label}.</p>
           )}
         </div>
-        <label className="block text-sm font-semibold">
-          Owner&apos;s email (so they can manage their site)
-          <input type="email" className="field mt-1" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} maxLength={120} />
-          <span className="mt-1 block text-xs font-normal text-muted">Used only for owner login. It is never shown on the public site.</span>
-        </label>
+        {!request && (
+          <label className="block text-sm font-semibold">
+            Owner&apos;s email (so they can manage their site)
+            <input type="email" className="field mt-1" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} maxLength={120} />
+            <span className="mt-1 block text-xs font-normal text-muted">Used only for owner login. It is never shown on the public site.</span>
+          </label>
+        )}
         <label className="flex items-start gap-3 rounded-xl bg-amber-50 p-3 text-sm">
           <input type="checkbox" className="mt-1" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
           <span>
@@ -231,7 +283,7 @@ export default function InterviewPage() {
           "✨ Generate the website"
         )}
       </button>
-      {!complete && <p className="mt-2 text-center text-xs text-muted">Answer all 5 questions, add the owner&apos;s email, and confirm consent to continue.</p>}
+      {!complete && <p className="mt-2 text-center text-xs text-muted">Answer all 5 questions, confirm consent{request ? "" : ", and add the owner's email"} to continue.</p>}
     </div>
   );
 }

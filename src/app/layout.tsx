@@ -24,8 +24,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Link>
             <div className="flex items-center gap-1 text-sm font-medium sm:gap-3">
               <Link href="/#explore" className="rounded-full px-3 py-1.5 hover:bg-black/5">Explore</Link>
-              <Link href="/ambassador" className="rounded-full px-3 py-1.5 hover:bg-black/5">Ambassador</Link>
-              <Link href="/interview" className="btn btn-primary !py-1.5 text-sm">Start interview</Link>
+              <Link href="/owner" className="rounded-full px-3 py-1.5 hover:bg-black/5">For businesses</Link>
+              <Link href="/ambassador" className="rounded-full px-3 py-1.5 hover:bg-black/5">Ambassadors</Link>
             </div>
           </nav>
         </header>

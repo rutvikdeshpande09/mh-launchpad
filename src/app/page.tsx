@@ -28,7 +28,8 @@ export default async function Home() {
           interview them in their own language and launch a free site and digital business card in minutes.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Link href="/ambassador" className="btn btn-primary">Become a Tech Ambassador</Link>
+          <Link href="/owner" className="btn btn-primary">I own a business</Link>
+          <Link href="/ambassador" className="btn btn-ghost">I&apos;m a student ambassador</Link>
           <Link href="#explore" className="btn btn-ghost">See live examples</Link>
         </div>
       </section>

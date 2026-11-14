@@ -14,8 +14,18 @@ create table if not exists public.ambassadors (
   email            text not null,
   is_demo          boolean not null default false,
   badge_awarded_at timestamptz,
+  languages        jsonb not null default '[]',    -- languages they can interview in (public)
+  bio              text not null default '',       -- short public bio
+  accepting        boolean not null default false, -- shown to businesses only when true
+  passcode_hash    text,                           -- scrypt hash; lets them sign back in
   created_at       timestamptz not null default now()
 );
+
+-- Migration for databases created before ambassador profiles existed (safe to re-run):
+alter table public.ambassadors add column if not exists languages     jsonb   not null default '[]';
+alter table public.ambassadors add column if not exists bio           text    not null default '';
+alter table public.ambassadors add column if not exists accepting     boolean not null default false;
+alter table public.ambassadors add column if not exists passcode_hash text;
 
 -- ----------------------------------------------------------------- businesses
 create table if not exists public.businesses (
@@ -65,12 +75,33 @@ create table if not exists public.inquiries (
 );
 create index if not exists inquiries_business_idx on public.inquiries (business_id, created_at desc);
 
+-- ---------------------------------------------------------- interview_requests
+-- A business owner asks one specific ambassador to interview them.
+create table if not exists public.interview_requests (
+  id              uuid primary key default gen_random_uuid(),
+  ambassador_id   uuid not null references public.ambassadors(id) on delete cascade,
+  ambassador_name text not null default '',
+  owner_email     text not null,                   -- private: never sent to the ambassador
+  business_name   text not null,
+  owner_language  text not null default 'en',
+  note            text not null default '',
+  contact         text not null default '',        -- shared only with the chosen ambassador
+  status          text not null default 'pending', -- pending | accepted | declined | completed
+  business_slug   text,
+  is_demo         boolean not null default false,
+  created_at      timestamptz not null default now()
+);
+create index if not exists requests_ambassador_idx on public.interview_requests (ambassador_id, created_at desc);
+create index if not exists requests_owner_idx on public.interview_requests (owner_email, created_at desc);
+
 -- ------------------------------------------------------------------------ RLS
 alter table public.ambassadors          enable row level security;
 alter table public.businesses           enable row level security;
 alter table public.business_owners      enable row level security;
 alter table public.service_certificates enable row level security;
 alter table public.inquiries            enable row level security;
+-- interview_requests has RLS on and no policies on purpose: only the server (service role) can read it.
+alter table public.interview_requests   enable row level security;
 
 -- Public websites are readable by anyone.
 drop policy if exists "public can read businesses" on public.businesses;

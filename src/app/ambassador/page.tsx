@@ -1,12 +1,12 @@
 "use client";
 
-import { Award, Loader2 } from "lucide-react";
-import Link from "next/link";
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
+import AmbassadorDashboard from "@/components/AmbassadorDashboard";
 import { SCENARIO } from "@/lib/content";
-import { clearAmbassador, postJson, saveAmbassador, useAmbassador } from "@/lib/client";
+import { postJson, saveAmbassador, useAmbassador } from "@/lib/client";
 
-type Step = "details" | "rewrite" | "followup" | "done";
+type Step = "details" | "rewrite" | "followup";
 
 interface GradeResult {
   passed: boolean;
@@ -17,9 +17,11 @@ interface GradeResult {
 
 export default function AmbassadorPage() {
   const { session, ready } = useAmbassador();
+  const [mode, setMode] = useState<"signup" | "signin">("signup");
   const [step, setStep] = useState<Step>("details");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [passcode, setPasscode] = useState("");
   const [rewrite, setRewrite] = useState("");
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
@@ -28,12 +30,7 @@ export default function AmbassadorPage() {
   const [error, setError] = useState("");
 
   function accept(res: GradeResult) {
-    if (res.token && res.ambassador) {
-      const s = { token: res.token, name: res.ambassador.name, demo: res.ambassador.demo };
-      saveAmbassador(s);
-    }
-    setFeedback(res.feedback);
-    setStep("done");
+    if (res.token && res.ambassador) saveAmbassador({ token: res.token, name: res.ambassador.name, demo: res.ambassador.demo });
   }
 
   async function run<T>(fn: () => Promise<T>): Promise<T | null> {
@@ -42,7 +39,12 @@ export default function AmbassadorPage() {
     try {
       return await fn();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      const msg = e instanceof Error ? e.message : "Something went wrong.";
+      setError(msg);
+      if (msg.includes("already has an ambassador account")) {
+        setMode("signin"); // they registered before: send them to sign-in
+        setStep("details");
+      }
       return null;
     } finally {
       setBusy(false);
@@ -50,7 +52,7 @@ export default function AmbassadorPage() {
   }
 
   async function getFollowUp() {
-    const res = await run(() => postJson<{ question: string }>("/api/grade-skill", { action: "followup", rewrite }));
+    const res = await run(() => postJson<{ question: string }>("/api/grade-skill", { action: "followup", rewrite, email }));
     if (res) {
       setQuestion(res.question);
       setStep("followup");
@@ -58,7 +60,7 @@ export default function AmbassadorPage() {
   }
 
   async function submitAnswer() {
-    const res = await run(() => postJson<GradeResult>("/api/grade-skill", { action: "grade", rewrite, question, answer, name, email }));
+    const res = await run(() => postJson<GradeResult>("/api/grade-skill", { action: "grade", rewrite, question, answer, name, email, passcode }));
     if (!res) return;
     if (res.passed) accept(res);
     else {
@@ -72,48 +74,26 @@ export default function AmbassadorPage() {
     if (res) accept(res);
   }
 
-  const wrap = "mx-auto max-w-2xl px-4 py-12";
+  async function signIn() {
+    const res = await run(() => postJson<GradeResult>("/api/ambassador", { action: "signin", email, passcode }));
+    if (res) accept(res);
+  }
 
   if (!ready) return null;
+  if (session) return <AmbassadorDashboard session={session} />;
 
-  if (session && (step === "done" || step === "details")) {
-    return (
-      <div className={wrap}>
-        <div className="card p-8 text-center">
-          <Award className="mx-auto text-brand" size={48} />
-          <h1 className="mt-4 text-3xl font-extrabold">You&apos;re a Tech Ambassador, {session.name}!</h1>
-          <p className="mt-2 text-muted">
-            {feedback || "Your badge is saved in this browser."} {session.demo && "(Judge demo access)"}
-          </p>
-          <p className="mt-4 inline-block rounded-full bg-brand px-4 py-1.5 text-sm font-bold text-white">🏅 Tech Ambassador</p>
-          <p className="mt-2 text-xs text-muted">An unofficial program badge.</p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link href="/interview" className="btn btn-primary">Start an interview</Link>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={() => {
-                clearAmbassador();
-                setFeedback("");
-                setStep("details");
-              }}
-            >
-              Sign out
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const wrap = "mx-auto max-w-2xl px-4 py-12";
 
   return (
     <div className={wrap}>
-      <h1 className="text-3xl font-extrabold">Tech Ambassador sign-up</h1>
+      <h1 className="text-3xl font-extrabold">Tech Ambassador {mode === "signup" ? "sign-up" : "sign-in"}</h1>
       <p className="mt-2 text-muted">
-        Pass a quick 60-second skill check to unlock live interviews with local businesses. It makes sure every site is written with care.
+        {mode === "signup"
+          ? "Pass a quick 60-second skill check to unlock interviews. Then set up a public profile so businesses can choose you."
+          : "Welcome back. Sign in with your school email and passcode."}
       </p>
 
-      {step === "details" && (
+      {step === "details" && mode === "signup" && (
         <form
           className="card mt-8 space-y-4 p-6"
           onSubmit={(e) => {
@@ -139,7 +119,18 @@ export default function AmbassadorPage() {
               title="Please use your @lammersvilleusd.net email"
             />
           </label>
+          <label className="block text-sm font-semibold">
+            Create a passcode
+            <input type="password" className="field mt-1" value={passcode} onChange={(e) => setPasscode(e.target.value)} required minLength={6} maxLength={64} autoComplete="new-password" />
+            <span className="mt-1 block text-xs font-normal text-muted">At least 6 characters. You&apos;ll use it with your email to sign back in on any device.</span>
+          </label>
           <button type="submit" className="btn btn-primary w-full">Continue to the skill check</button>
+          <p className="text-center text-sm">
+            Already registered?{" "}
+            <button type="button" className="font-semibold text-brand underline" onClick={() => { setMode("signin"); setError(""); }}>
+              Sign in
+            </button>
+          </p>
           <div className="border-t border-line pt-4 text-center">
             <p className="text-sm text-muted">Judging or just exploring?</p>
             <button type="button" className="btn btn-ghost mt-2" onClick={demoAccess} disabled={busy}>
@@ -149,7 +140,35 @@ export default function AmbassadorPage() {
         </form>
       )}
 
-      {(step === "rewrite" || step === "followup") && (
+      {mode === "signin" && (
+        <form
+          className="card mt-8 space-y-4 p-6"
+          onSubmit={(e) => {
+            e.preventDefault();
+            signIn();
+          }}
+        >
+          <label className="block text-sm font-semibold">
+            School email
+            <input type="email" className="field mt-1" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </label>
+          <label className="block text-sm font-semibold">
+            Passcode
+            <input type="password" className="field mt-1" value={passcode} onChange={(e) => setPasscode(e.target.value)} required autoComplete="current-password" />
+          </label>
+          <button type="submit" className="btn btn-primary w-full" disabled={busy}>
+            {busy && <Loader2 className="animate-spin" size={16} />} Sign in
+          </button>
+          <p className="text-center text-sm">
+            New here?{" "}
+            <button type="button" className="font-semibold text-brand underline" onClick={() => { setMode("signup"); setError(""); }}>
+              Create an ambassador account
+            </button>
+          </p>
+        </form>
+      )}
+
+      {mode === "signup" && (step === "rewrite" || step === "followup") && (
         <div className="card mt-8 space-y-4 p-6">
           <div>
             <p className="text-sm font-bold uppercase tracking-widest text-brand">Challenge 1 of 2</p>
@@ -180,14 +199,7 @@ export default function AmbassadorPage() {
             <div className="space-y-3 border-t border-line pt-4">
               <p className="text-sm font-bold uppercase tracking-widest text-brand">Challenge 2 of 2</p>
               <p className="font-semibold">{question}</p>
-              <textarea
-                className="field"
-                rows={2}
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                placeholder="Answer in one sentence…"
-                maxLength={800}
-              />
+              <textarea className="field" rows={2} value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Answer in one sentence…" maxLength={800} />
               <button type="button" className="btn btn-primary" disabled={busy || answer.trim().length < 8} onClick={submitAnswer}>
                 {busy && <Loader2 className="animate-spin" size={16} />} Submit for grading
               </button>

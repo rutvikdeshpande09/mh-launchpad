@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 
 /**
  * Stateless signed tokens for Tech Ambassadors, so the app works even
@@ -50,4 +50,19 @@ export const SCHOOL_DOMAIN = "lammersvilleusd.net";
 
 export function isSchoolEmail(email: string): boolean {
   return new RegExp(`^[^@\\s]+@${SCHOOL_DOMAIN.replace(".", "\\.")}$`, "i").test(email.trim());
+}
+
+/** Passcodes let an ambassador sign back in (the school email alone is not verified). */
+export function hashPasscode(passcode: string): string {
+  const salt = randomBytes(16).toString("hex");
+  return `${salt}:${scryptSync(passcode, salt, 32).toString("hex")}`;
+}
+
+export function checkPasscode(passcode: string, stored: string | null): boolean {
+  if (!stored) return false;
+  const [salt, hash] = stored.split(":");
+  if (!salt || !hash) return false;
+  const a = Buffer.from(hash, "hex");
+  const b = scryptSync(passcode, salt, 32);
+  return a.length === b.length && timingSafeEqual(a, b);
 }

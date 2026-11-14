@@ -8,7 +8,7 @@ import { canMock, mockSite } from "@/lib/mock";
 import { clientIp, rateLimit } from "@/lib/ratelimit";
 import { SiteContentSchema, normalizeContent } from "@/lib/schemas";
 import { signDraftToken } from "@/lib/preview";
-import { createBusiness, createCertificate, parseImageDataUrl, usingSupabase } from "@/lib/store";
+import { createBusiness, createCertificate, getRequest, parseImageDataUrl, updateRequest, usingSupabase } from "@/lib/store";
 
 export const maxDuration = 60; // Gemini audio + structured output can take a while
 
@@ -21,7 +21,8 @@ const Body = z.object({
   token: z.string(),
   language: z.enum(langCodes), // language the owner speaks in the interview
   altLanguage: z.enum(langCodes), // second language shown on the site
-  ownerEmail: z.string().email().max(120),
+  ownerEmail: z.string().email().max(120).optional(), // not needed when answering an owner's request
+  requestId: z.string().min(1).max(64).optional(),
   consent: z.literal(true),
   answers: z.array(Answer).length(5),
   photos: z.array(z.string().max(1_000_000)).max(3),
@@ -36,6 +37,17 @@ export async function POST(req: Request) {
 
   const ambassador = verifyToken(b.token);
   if (!ambassador) return bad("Your session expired. Please sign in again as a Tech Ambassador.", 401);
+
+  // If this interview answers an owner's request, the owner's account email comes from the request.
+  let ownerEmail = b.ownerEmail;
+  let request = null;
+  if (b.requestId) {
+    request = await getRequest(b.requestId);
+    if (!request || request.ambassadorId !== ambassador.id) return bad("That interview request wasn't found.", 404);
+    if (request.status !== "accepted") return bad("Accept the request before interviewing, or it was already completed.", 409);
+    ownerEmail = request.ownerEmail;
+  }
+  if (!ownerEmail) return bad("Please add the owner's email.");
   if (!rateLimit(`gen:${clientIp(req)}`, 6, 30 * 60_000) || !rateLimit(`gen:${ambassador.id}`, 4, 30 * 60_000)) {
     return bad("You've generated several sites recently. Please wait a bit before making another.", 429);
   }
@@ -64,7 +76,9 @@ export async function POST(req: Request) {
     } else {
       const parts: Part[] = [
         {
-          text: `Interview with a home-based business owner, conducted by a student volunteer. The owner answered in ${spoken.label}. Answers may be typed or recorded audio; transcribe and understand any audio.`,
+          text: `Interview with a home-based business owner, conducted by a student volunteer. The owner answered in ${spoken.label}. Answers may be typed or recorded audio; transcribe and understand any audio.${
+            request ? ` The owner registered the business name as "${request.businessName}"; use that exact name.` : ""
+          }`,
         },
       ];
       b.answers.forEach((a, i) => {
@@ -96,7 +110,7 @@ ${SAFETY_RULES}`,
       photos,
       ambassadorId: ambassador.id,
       ambassadorName: ambassador.name,
-      ownerEmail: b.ownerEmail,
+      ownerEmail,
     });
     const certificate = await createCertificate({
       ambassadorId: ambassador.id,
@@ -105,6 +119,7 @@ ${SAFETY_RULES}`,
       businessSlug: business.slug,
       businessId: business.id,
     });
+    if (request) await updateRequest(request.id, { status: "completed", businessSlug: business.slug });
     return Response.json({ slug: business.slug, certificateId: certificate.id, draftToken: signDraftToken(business.slug) });
   } catch (e) {
     if (e instanceof AiConfigError) return bad(e.message, 503);

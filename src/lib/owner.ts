@@ -29,3 +29,17 @@ export async function authorizeOwner(req: Request, slug: string): Promise<OwnerS
   }
   return null;
 }
+
+/**
+ * Who is this business owner, before they have a site? Real owners sign in with a Supabase
+ * magic link; judges can use demo access, which is kept fully separate from real data.
+ */
+export async function authorizeOwnerAccount(req: Request): Promise<OwnerSession | null> {
+  if (req.headers.get("x-demo-owner") === "1") return { email: "demo-owner@demo.local", demo: true };
+  const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  if (bearer && usingSupabase) {
+    const { data } = await admin().auth.getUser(bearer);
+    if (data.user?.email) return { email: data.user.email.toLowerCase(), demo: false };
+  }
+  return null;
+}

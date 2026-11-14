@@ -1,7 +1,7 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { AltLang, Business, Certificate, Inquiry, SiteContent } from "./schemas";
+import type { AltLang, AmbassadorProfile, Business, Certificate, Inquiry, InterviewRequest, PublicAmbassador, RequestStatus, SiteContent } from "./schemas";
 import { slugify } from "./schemas";
 import { SEED_BUSINESSES } from "./seed";
 
@@ -22,7 +22,13 @@ export function admin(): SupabaseClient {
 }
 
 // ---------- in-memory fallback ----------
+interface AmbRec extends AmbassadorProfile {
+  email: string;
+  passcodeHash: string | null;
+}
 interface Mem {
+  ambassadors: Map<string, AmbRec>;
+  requests: Map<string, InterviewRequest>;
   businesses: Map<string, Business>;
   owners: Map<string, string>; // slug -> owner email
   certs: Map<string, Certificate>;
@@ -30,11 +36,16 @@ interface Mem {
 }
 const g = globalThis as unknown as { __mh?: Mem };
 const mem: Mem = (g.__mh ??= {
+  ambassadors: new Map(),
+  requests: new Map(),
   businesses: new Map(SEED_BUSINESSES.map((b) => [b.slug, structuredClone(b)])),
   owners: new Map(),
   certs: new Map(),
   inquiries: new Map(),
 });
+
+mem.ambassadors ??= new Map(); // dev hot-reload may hold an older shape
+mem.requests ??= new Map();
 
 // ---------- row mapping ----------
 type Row = Record<string, unknown>;
@@ -200,11 +211,144 @@ export async function listInquiries(slug: string): Promise<Inquiry[]> {
 }
 
 // ---------- ambassadors & certificates ----------
-export async function recordAmbassador(a: { id: string; name: string; email: string; demo: boolean }): Promise<void> {
-  if (!usingSupabase) return;
-  await admin()
+export interface AmbassadorRecord extends AmbassadorProfile {
+  email: string;
+  passcodeHash: string | null;
+}
+
+const toAmb = (r: Row): AmbassadorRecord => ({
+  id: r.id as string,
+  name: r.name as string,
+  email: (r.email as string) ?? "",
+  demo: Boolean(r.is_demo),
+  languages: (r.languages as string[]) ?? [],
+  bio: (r.bio as string) ?? "",
+  accepting: Boolean(r.accepting),
+  passcodeHash: (r.passcode_hash as string) ?? null,
+});
+
+/** Create or update (by id) an ambassador account. */
+export async function saveAmbassador(a: { id: string; name: string; email: string; demo: boolean; passcodeHash: string | null }): Promise<void> {
+  if (!usingSupabase) {
+    const prev = mem.ambassadors.get(a.id);
+    mem.ambassadors.set(a.id, {
+      languages: [], bio: "", accepting: false, ...prev,
+      id: a.id, name: a.name, email: a.email, demo: a.demo, passcodeHash: a.passcodeHash,
+    });
+    return;
+  }
+  await admin().from("ambassadors").upsert({
+    id: a.id, name: a.name, email: a.email, is_demo: a.demo, passcode_hash: a.passcodeHash, badge_awarded_at: new Date().toISOString(),
+  });
+}
+
+export async function getAmbassadorByEmail(email: string): Promise<AmbassadorRecord | null> {
+  const e = email.trim().toLowerCase();
+  if (!usingSupabase) return [...mem.ambassadors.values()].find((a) => !a.demo && a.email === e) ?? null;
+  const { data } = await admin().from("ambassadors").select("*").eq("email", e).eq("is_demo", false).limit(1).maybeSingle();
+  return data ? toAmb(data) : null;
+}
+
+export async function getAmbassador(id: string): Promise<AmbassadorRecord | null> {
+  if (!usingSupabase) return mem.ambassadors.get(id) ?? null;
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+  const { data } = await admin().from("ambassadors").select("*").eq("id", id).maybeSingle();
+  return data ? toAmb(data) : null;
+}
+
+export async function updateAmbassadorProfile(id: string, p: { languages: string[]; bio: string; accepting: boolean }): Promise<boolean> {
+  if (!usingSupabase) {
+    const a = mem.ambassadors.get(id);
+    if (!a) return false;
+    Object.assign(a, p);
+    return true;
+  }
+  const { error } = await admin().from("ambassadors").update({ languages: p.languages, bio: p.bio, accepting: p.accepting }).eq("id", id);
+  if (error) console.warn("updateAmbassadorProfile failed:", error.message);
+  return !error;
+}
+
+/** Public directory of ambassadors who are accepting requests. Real and demo pools never mix. */
+export async function listPublicAmbassadors(demo: boolean): Promise<PublicAmbassador[]> {
+  if (!usingSupabase) {
+    return [...mem.ambassadors.values()]
+      .filter((a) => a.accepting && a.demo === demo)
+      .map(({ id, name, languages, bio }) => ({ id, name, languages, bio }));
+  }
+  const { data } = await admin()
     .from("ambassadors")
-    .upsert({ id: a.id, name: a.name, email: a.email, is_demo: a.demo, badge_awarded_at: new Date().toISOString() });
+    .select("id,name,languages,bio")
+    .eq("accepting", true)
+    .eq("is_demo", demo)
+    .order("badge_awarded_at", { ascending: false })
+    .limit(100);
+  return (data ?? []).map((r) => ({ id: r.id, name: r.name, languages: r.languages ?? [], bio: r.bio ?? "" }));
+}
+
+// ---------- interview requests ----------
+const toRequest = (r: Row): InterviewRequest => ({
+  id: r.id as string,
+  ambassadorId: r.ambassador_id as string,
+  ambassadorName: (r.ambassador_name as string) ?? "",
+  ownerEmail: r.owner_email as string,
+  businessName: r.business_name as string,
+  ownerLanguage: (r.owner_language as string) ?? "en",
+  note: (r.note as string) ?? "",
+  contact: (r.contact as string) ?? "",
+  status: r.status as RequestStatus,
+  businessSlug: (r.business_slug as string) ?? null,
+  isDemo: Boolean(r.is_demo),
+  createdAt: r.created_at as string,
+});
+
+export async function createRequest(i: Omit<InterviewRequest, "id" | "status" | "businessSlug" | "createdAt">): Promise<InterviewRequest> {
+  if (!usingSupabase) {
+    const r: InterviewRequest = { ...i, id: randomUUID(), status: "pending", businessSlug: null, createdAt: new Date().toISOString() };
+    mem.requests.set(r.id, r);
+    return r;
+  }
+  const { data, error } = await admin()
+    .from("interview_requests")
+    .insert({
+      ambassador_id: i.ambassadorId, ambassador_name: i.ambassadorName, owner_email: i.ownerEmail.toLowerCase(),
+      business_name: i.businessName, owner_language: i.ownerLanguage, note: i.note, contact: i.contact, is_demo: i.isDemo,
+    })
+    .select("*")
+    .single();
+  if (error || !data) throw new Error(error?.message ?? "Could not save the request");
+  return toRequest(data);
+}
+
+export async function getRequest(id: string): Promise<InterviewRequest | null> {
+  if (!usingSupabase) return mem.requests.get(id) ?? null;
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+  const { data } = await admin().from("interview_requests").select("*").eq("id", id).maybeSingle();
+  return data ? toRequest(data) : null;
+}
+
+export async function listRequestsForAmbassador(id: string): Promise<InterviewRequest[]> {
+  if (!usingSupabase) return [...mem.requests.values()].filter((r) => r.ambassadorId === id).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const { data } = await admin().from("interview_requests").select("*").eq("ambassador_id", id).order("created_at", { ascending: false }).limit(100);
+  return (data ?? []).map(toRequest);
+}
+
+export async function listRequestsForOwner(email: string): Promise<InterviewRequest[]> {
+  const e = email.toLowerCase();
+  if (!usingSupabase) return [...mem.requests.values()].filter((r) => r.ownerEmail.toLowerCase() === e).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const { data } = await admin().from("interview_requests").select("*").eq("owner_email", e).order("created_at", { ascending: false }).limit(50);
+  return (data ?? []).map(toRequest);
+}
+
+export async function updateRequest(id: string, patch: { status?: RequestStatus; businessSlug?: string }): Promise<void> {
+  if (!usingSupabase) {
+    const r = mem.requests.get(id);
+    if (r) Object.assign(r, patch);
+    return;
+  }
+  const row: Record<string, unknown> = {};
+  if (patch.status) row.status = patch.status;
+  if (patch.businessSlug) row.business_slug = patch.businessSlug;
+  await admin().from("interview_requests").update(row).eq("id", id);
 }
 
 export const SERVICE_HOURS = 2; // estimated: interview + site review

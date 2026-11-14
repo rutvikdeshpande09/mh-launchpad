@@ -47,6 +47,7 @@ export default function ManageClient({ initial }: { initial: Business }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [draftToken, setDraftToken] = useState("");
 
   // photo cropping
   const [cropSrc, setCropSrc] = useState<string | null>(null);
@@ -90,7 +91,9 @@ export default function ManageClient({ initial }: { initial: Business }) {
           setAuth(null);
           setMessage({ kind: "err", text: "That account doesn't own this business. Sign in with the owner's email." });
         } else if (res.ok) {
-          setInquiries(((await res.json()) as { inquiries: Inquiry[] }).inquiries);
+          const data = (await res.json()) as { inquiries: Inquiry[]; draftToken?: string };
+          setInquiries(data.inquiries);
+          setDraftToken(data.draftToken ?? "");
         }
       })
       .catch(() => {});
@@ -238,8 +241,12 @@ export default function ManageClient({ initial }: { initial: Business }) {
           <p className="text-sm text-muted">{auth.kind === "demo" ? "Demo owner access" : `Signed in as ${auth.email}`}</p>
         </div>
         <div className="flex gap-2">
-          <Link href={`/sites/${business.slug}`} target="_blank" className="btn btn-ghost !py-2 text-sm">
-            <ExternalLink size={16} /> View live site
+          <Link
+            href={business.published ? `/sites/${business.slug}` : `/sites/${business.slug}?preview=${draftToken}`}
+            target="_blank"
+            className="btn btn-ghost !py-2 text-sm"
+          >
+            <ExternalLink size={16} /> {business.published ? "View live site" : "Preview draft"}
           </Link>
           <button
             type="button"

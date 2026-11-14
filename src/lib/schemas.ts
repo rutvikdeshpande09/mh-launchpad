@@ -73,6 +73,45 @@ export interface Inquiry {
   createdAt: string;
 }
 
+export interface PublicAmbassador {
+  id: string;
+  name: string; // "First L."
+  languages: string[];
+  bio: string;
+}
+
+export interface AmbassadorProfile extends PublicAmbassador {
+  accepting: boolean;
+  demo: boolean;
+}
+
+export type RequestStatus = "pending" | "accepted" | "declined" | "completed";
+
+/** An owner's request to be interviewed by a specific ambassador. */
+export interface InterviewRequest {
+  id: string;
+  ambassadorId: string;
+  ambassadorName: string;
+  ownerEmail: string;
+  businessName: string;
+  ownerLanguage: string;
+  note: string;
+  contact: string; // how the owner wants this ambassador to reach them (shared only with that ambassador)
+  status: RequestStatus;
+  businessSlug: string | null;
+  isDemo: boolean;
+  createdAt: string;
+}
+
+/** What an ambassador or owner may see of a request: never the owner's login email. */
+export function publicRequest(r: InterviewRequest): Omit<InterviewRequest, "ownerEmail"> {
+  return {
+    id: r.id, ambassadorId: r.ambassadorId, ambassadorName: r.ambassadorName, businessName: r.businessName,
+    ownerLanguage: r.ownerLanguage, note: r.note, contact: r.contact, status: r.status, businessSlug: r.businessSlug,
+    isDemo: r.isDemo, createdAt: r.createdAt,
+  };
+}
+
 export const HEX = /^#[0-9a-fA-F]{6}$/;
 
 /** Clamp model output to safe values so the UI can never break or be abused. */

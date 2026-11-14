@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { authorizeOwner } from "@/lib/owner";
 import { clientIp, rateLimit } from "@/lib/ratelimit";
+import { signDraftToken } from "@/lib/preview";
 import { listInquiries, setAvatar, uploadImage } from "@/lib/store";
 
 // GET  /api/manage?slug=...  -> private inquiries for the signed-in owner
@@ -8,7 +9,7 @@ export async function GET(req: Request) {
   const slug = new URL(req.url).searchParams.get("slug") ?? "";
   const session = await authorizeOwner(req, slug);
   if (!session) return Response.json({ error: "Please sign in as the owner of this business." }, { status: 401 });
-  return Response.json({ inquiries: await listInquiries(slug) });
+  return Response.json({ inquiries: await listInquiries(slug), draftToken: signDraftToken(slug) });
 }
 
 const Avatar = z.object({ slug: z.string().min(1).max(80), action: z.literal("avatar"), dataUrl: z.string() });

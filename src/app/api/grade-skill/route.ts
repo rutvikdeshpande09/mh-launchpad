@@ -3,14 +3,14 @@ import { z } from "zod";
 import { AiConfigError, SAFETY_RULES, generateJson } from "@/lib/gemini";
 import { SCENARIO } from "@/lib/content";
 import { canMock } from "@/lib/mock";
-import { isSchoolEmail, signToken } from "@/lib/auth";
+import { hashPasscode, isSchoolEmail, signToken } from "@/lib/auth";
 import { clientIp, rateLimit } from "@/lib/ratelimit";
-import { recordAmbassador } from "@/lib/store";
+import { getAmbassadorByEmail, saveAmbassador } from "@/lib/store";
 
 const bad = (message: string, status = 400) => Response.json({ error: message }, { status });
 
 const Body = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("followup"), rewrite: z.string().min(1).max(1200) }),
+  z.object({ action: z.literal("followup"), rewrite: z.string().min(1).max(1200), email: z.string().max(120).optional() }),
   z.object({
     action: z.literal("grade"),
     rewrite: z.string().min(1).max(1200),
@@ -18,6 +18,7 @@ const Body = z.discriminatedUnion("action", [
     answer: z.string().min(1).max(800),
     name: z.string().min(2).max(60),
     email: z.string().max(120),
+    passcode: z.string().min(6).max(64),
   }),
   z.object({ action: z.literal("demo"), name: z.string().min(2).max(60).optional() }),
 ]);
@@ -36,8 +37,8 @@ function displayName(full: string): string {
   return last ? `${first} ${last[0].toUpperCase()}.` : first;
 }
 
-function issue(name: string, email: string, demo: boolean) {
-  const claims = { id: randomUUID(), name: displayName(name), email, demo, exp: Date.now() + 1000 * 60 * 60 * 24 * 3 };
+function issue(name: string, email: string, demo: boolean, id: string = randomUUID()) {
+  const claims = { id, name: displayName(name), email, demo, exp: Date.now() + 1000 * 60 * 60 * 24 * 14 };
   return { token: signToken(claims), ambassador: { id: claims.id, name: claims.name, demo } };
 }
 
@@ -51,12 +52,16 @@ export async function POST(req: Request) {
   // Judge shortcut: skips email + skill check; certificates are labelled as demo.
   if (body.action === "demo") {
     const { token, ambassador } = issue(body.name || "Judge Demo", "judge@demo.local", true);
-    await recordAmbassador({ id: ambassador.id, name: ambassador.name, email: "judge@demo.local", demo: true });
+    await saveAmbassador({ id: ambassador.id, name: ambassador.name, email: "judge@demo.local", demo: true, passcodeHash: null });
     return Response.json({ passed: true, token, ambassador, feedback: "Demo access granted." });
   }
 
   try {
     if (body.action === "followup") {
+      // Fail early (before spending an AI call) if this school email already has an account.
+      if (body.email && isSchoolEmail(body.email) && (await getAmbassadorByEmail(body.email))?.passcodeHash) {
+        return bad("That email already has an ambassador account. Use \"Sign in\" with your passcode instead.", 409);
+      }
       if (canMock()) return Response.json({ question: "Who is your ideal customer, and why would they choose you?" });
       const { question } = await generateJson({
         system: `You are a friendly mentor for a student volunteer program. ${SAFETY_RULES}`,
@@ -73,6 +78,8 @@ export async function POST(req: Request) {
 
     // action === "grade"
     if (!isSchoolEmail(body.email)) return bad("Please use your @lammersvilleusd.net school email, or use the judge demo option.");
+    const existing = await getAmbassadorByEmail(body.email);
+    if (existing?.passcodeHash) return bad("That email already has an ambassador account. Use \"Sign in\" with your passcode instead.", 409);
     if (body.rewrite.trim().toLowerCase() === SCENARIO.toLowerCase()) return bad("Your rewrite is the same as the original. Try improving it!");
 
     const result = canMock()
@@ -98,8 +105,10 @@ Pass (passed=true, score >= 6) only if: the rewrite is clearer, polite and profe
 
     if (!result.passed) return Response.json({ passed: false, score: result.score, feedback: result.feedback });
 
-    const { token, ambassador } = issue(body.name, body.email.trim().toLowerCase(), false);
-    await recordAmbassador({ id: ambassador.id, name: ambassador.name, email: body.email.trim().toLowerCase(), demo: false });
+    const email = body.email.trim().toLowerCase();
+    // A pre-passcode account for this email (older sign-up) is reused so its sites/certificates stay linked.
+    const { token, ambassador } = issue(body.name, email, false, existing?.id);
+    await saveAmbassador({ id: ambassador.id, name: ambassador.name, email, demo: false, passcodeHash: hashPasscode(body.passcode) });
     return Response.json({ passed: true, score: result.score, feedback: result.feedback, token, ambassador });
   } catch (e) {
     if (e instanceof AiConfigError) return bad(e.message, 503);

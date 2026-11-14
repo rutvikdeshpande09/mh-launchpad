@@ -18,6 +18,13 @@ Owners keep control afterward: they can say *"Sold out of chicken tamales this w
 
 ## ⚡ Try it in 2 minutes (for judges)
 
+**Business owners choose their own ambassador. Try both sides:**
+- *As a student:* go to **Ambassadors → Judge demo access**, then save a public profile (languages and a short bio).
+- *As an owner:* open **For businesses → Demo owner access**, enter a business name, pick that ambassador, and send the request.
+- *Back as the student:* accept the request and press **Start the interview**. The owner's account is linked automatically, and a private draft site is created for them to approve.
+
+Or explore the finished result first:
+
 1. Open the live app and click the **demo business** (Tamales La Abuela, in English + Spanish). Try the language toggle, tilt the cards, and flip the business card.
 2. Go to **Ambassador → "Judge demo access"** (skips the school-email check).
 3. Open **Start interview**, choose a language, type short answers (or record your voice), tick the consent box, and press **Generate**. In about 30 seconds you get a private **draft** website and a service certificate; press **Approve & publish** to make it public.
@@ -30,7 +37,8 @@ The seeded business is a **fictional demo**, so the app works on first boot with
 | Route | What it does |
 |---|---|
 | `/` | Landing page and directory of businesses |
-| `/ambassador` | Student sign-up (`@lammersvilleusd.net`) and a 60-second AI-graded skill check that awards the badge. Judge demo toggle included |
+| `/ambassador` | Student sign-up (`@lammersvilleusd.net`) with a passcode and a 60-second AI-graded skill check. Then a public profile (languages, bio), the inbox of interview requests, and sign-in on any device. Judge demo toggle included |
+| `/owner` | Business-owner sign-up/sign-in by email link: enter your business name, pick the ambassador who will interview you, and track your requests |
 | `/interview` | 5-question interview (text or in-browser voice recording in 7 languages) + photo upload → generates the site |
 | `/sites/[slug]` | Public 3D business website, bilingual toggle, masked inquiry form |
 | `/manage/[slug]` | Owner portal: magic-link login (or demo access), profile photo cropper, live card, AI site updater, private inbox |
@@ -85,6 +93,7 @@ Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Framer Motion (3D til
 
 ## 🔒 Privacy and safety by design
 
+- **Owners choose, nobody is assigned.** Businesses pick their own ambassador. Ambassadors appear only by first name + last initial, languages and a short bio. The owner's login email is never shown to the ambassador; only the contact detail the owner chooses to share with that one student. Demo and real accounts are kept in separate pools.
 - **Drafts and an off switch.** New sites are private drafts until someone with the draft link approves them, and owners can hide their site at any time from the owner portal.
 - **Consent first.** The interview can't start without confirming the owner agreed to be interviewed, to AI processing, and to a public page.
 - **No private details published.** The AI is told never to output street addresses, phone numbers, emails or children's names; the public area is only "Mountain House, CA".
@@ -97,7 +106,7 @@ Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Framer Motion (3D til
 ## ⚠️ Honest limitations
 
 - The service certificate is **not an official document**. Hours are an estimate and the certificate says it is *pending advisor confirmation*; a supervising adult must confirm them.
-- Student email domain is checked by format only (no email verification). The judge-demo toggle exists for evaluation.
+- Student email domain is checked by format only (no email verification); ambassadors sign back in with a passcode they set. The judge-demo toggle exists for evaluation.
 - AI translations can contain mistakes; owners should have a fluent speaker review their site.
 - In-memory mode (no Supabase) loses data on restart, and the in-memory rate limiter is per server instance.
 - Demo businesses can be edited by anyone through demo owner access, by design, so judges can try the portal. Real businesses require the owner's email login when Supabase is configured.
