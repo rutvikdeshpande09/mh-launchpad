@@ -18,13 +18,13 @@ export default async function Home() {
         <div className="floaty absolute -left-20 top-0 -z-10 size-72 rounded-full bg-brand/10" />
         <div className="floaty absolute -right-16 bottom-0 -z-10 size-80 rounded-[40%] bg-brand-2/10" />
         <p className="mx-auto w-fit rounded-full border border-line bg-white px-4 py-1 text-sm font-semibold text-brand">
-          Rotary AI for Good · Create Lasting Impact
+          A Mountain House High School project
         </p>
         <h1 className="mx-auto mt-5 max-w-3xl text-4xl font-black leading-tight tracking-tight sm:text-6xl">
           Every neighbor&apos;s business deserves a <span className="text-brand">front door</span> online.
         </h1>
         <p className="mx-auto mt-5 max-w-2xl text-lg text-muted">
-          Home bakers, tutors, tailors and henna artists rarely have a website. MH Launchpad lets Mountain House High School students
+          Home bakers, tutors, tailors and notary services rarely have a website. MH Launchpad lets Mountain House High School students
           interview them in their own language and launch a free site and digital business card in minutes.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">

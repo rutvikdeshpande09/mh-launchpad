@@ -85,8 +85,8 @@ export default function AmbassadorPage() {
           <p className="mt-2 text-muted">
             {feedback || "Your badge is saved in this browser."} {session.demo && "(Judge demo access)"}
           </p>
-          <p className="mt-4 inline-block rounded-full bg-brand px-4 py-1.5 text-sm font-bold text-white">🏅 Rotary Tech Ambassador</p>
-          <p className="mt-2 text-xs text-muted">An unofficial program badge, not issued by Rotary International.</p>
+          <p className="mt-4 inline-block rounded-full bg-brand px-4 py-1.5 text-sm font-bold text-white">🏅 Tech Ambassador</p>
+          <p className="mt-2 text-xs text-muted">An unofficial program badge.</p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link href="/interview" className="btn btn-primary">Start an interview</Link>
             <button

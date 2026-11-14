@@ -32,8 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="flex-1">{children}</main>
         <footer className="border-t border-line px-4 py-8 text-center text-sm text-muted">
           <p>
-            Built for the Rotary AI for Good hackathon, <em>Create Lasting Impact</em>. An independent student project:
-            not issued or endorsed by Rotary International.
+            MH Launchpad is an independent project by Mountain House High School students.
           </p>
         </footer>
       </body>

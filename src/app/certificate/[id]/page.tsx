@@ -54,7 +54,7 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
           <p className="font-semibold">Status: pending advisor confirmation</p>
           <p className="mt-1">
             Scanning the QR code confirms this record exists in MH Launchpad. The hours are an estimate and are not final until a
-            supervising advisor (school or Rotary club) confirms them. This certificate is not issued by Rotary International.
+            supervising advisor confirms them. This is an independent student project record, not an official document of any school or organization.
           </p>
         </div>
       </div>

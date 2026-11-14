@@ -1,8 +1,8 @@
 # 🚀 MH Launchpad
 
-**Local businesses, launched by local students.** Built for the Rotary AI for Good hackathon, *Create Lasting Impact*.
+**Local businesses, launched by local students.**
 
-Home-based entrepreneurs in Mountain House (bakers, tutors, tailors, henna artists) rarely have a website or a printed menu.
+Home-based entrepreneurs in Mountain House (bakers, tutors, tailors, notary services) rarely have a website or a printed menu.
 MH Launchpad lets high-school **Tech Ambassadors** run a short multilingual interview with an owner and, with AI, instantly
 publish:
 
@@ -96,7 +96,7 @@ Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Framer Motion (3D til
 
 ## ⚠️ Honest limitations
 
-- The service certificate is **not issued by Rotary International**. Hours are an estimate and the certificate says it is *pending advisor confirmation*; a supervising adult must confirm them.
+- The service certificate is **not an official document**. Hours are an estimate and the certificate says it is *pending advisor confirmation*; a supervising adult must confirm them.
 - Student email domain is checked by format only (no email verification). The judge-demo toggle exists for evaluation.
 - AI translations can contain mistakes; owners should have a fluent speaker review their site.
 - In-memory mode (no Supabase) loses data on restart, and the in-memory rate limiter is per server instance.
