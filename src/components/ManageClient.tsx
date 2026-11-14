@@ -17,7 +17,7 @@ const hasSupabase = Boolean(SUPA_URL && SUPA_ANON);
 type Auth = { kind: "demo" } | { kind: "supabase"; token: string; email: string };
 
 const EXAMPLES = [
-  "Sold out of samosas this weekend, add Mango Lassi for $5",
+  "Sold out of chicken tamales this weekend, add Atole for $5",
   "We are closed next Monday for a family event",
   "Change our hours to weekdays after 5pm",
 ];
@@ -295,7 +295,7 @@ export default function ManageClient({ initial }: { initial: Business }) {
             maxLength={600}
             value={instruction}
             onChange={(e) => setInstruction(e.target.value)}
-            placeholder="e.g. Sold out of samosas this weekend, add Mango Lassi for $5"
+            placeholder="e.g. Sold out of chicken tamales this weekend, add Atole for $5"
           />
           <div className="mt-3">
             <AudioRecorder value={audio} onChange={setAudio} disabled={busy} />

@@ -46,7 +46,7 @@ export default async function Home() {
 
       <section id="explore" className="mx-auto max-w-6xl px-4 py-20">
         <h2 className="text-3xl font-extrabold">Local businesses on MH Launchpad</h2>
-        <p className="mt-2 text-muted">The first two are fictional demos so you can explore right away.</p>
+        <p className="mt-2 text-muted">The first one is a fictional demo so you can explore right away.</p>
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {businesses.map((b) => (
             <Link
@@ -87,8 +87,8 @@ export default async function Home() {
               generate a brand-new site and a service certificate.
             </li>
             <li>
-              Open <Link href="/manage/madhuris-home-kitchen" className="font-semibold text-brand underline">the owner portal</Link>,
-              choose <strong>Demo owner access</strong>, and tell the AI &ldquo;Sold out of samosas this weekend, add Mango Lassi for $5.&rdquo;
+              Open <Link href="/manage/tamales-la-abuela" className="font-semibold text-brand underline">the owner portal</Link>,
+              choose <strong>Demo owner access</strong>, and tell the AI &ldquo;Sold out of chicken tamales this weekend, add Atole for $5.&rdquo;
             </li>
           </ol>
         </div>

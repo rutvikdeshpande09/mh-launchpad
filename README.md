@@ -10,7 +10,7 @@ publish:
 - a flip-able, downloadable **3D digital business card** with a QR code,
 - a printable, QR-linked **volunteer service certificate** for the student.
 
-Owners keep control afterward: they can say *"Sold out of samosas this weekend, add Mango Lassi for $5"* and the live site updates.
+Owners keep control afterward: they can say *"Sold out of chicken tamales this weekend, add Atole for $5"* and the live site updates.
 
 > **Live app:** https://mh-launchpad.vercel.app · **Code:** https://github.com/rutvikdeshpande09/mh-launchpad · **Demo video:** _add your Google Drive link here_
 
@@ -18,12 +18,12 @@ Owners keep control afterward: they can say *"Sold out of samosas this weekend, 
 
 ## ⚡ Try it in 2 minutes (for judges)
 
-1. Open the live app and click a **demo business** (Madhuri's Home Kitchen is English + Hindi, Tamales La Abuela is English + Spanish). Try the language toggle, tilt the cards, and flip the business card.
+1. Open the live app and click the **demo business** (Tamales La Abuela, in English + Spanish). Try the language toggle, tilt the cards, and flip the business card.
 2. Go to **Ambassador → "Judge demo access"** (skips the school-email check).
 3. Open **Start interview**, choose a language, type short answers (or record your voice), tick the consent box, and press **Generate**. In about 30 seconds you get a new website and a service certificate.
-4. Open `/manage/madhuris-home-kitchen` → **Demo owner access**. Upload a profile photo (watch the card update) and try the AI updater: *"Sold out of samosas this weekend, add Mango Lassi for $5."*
+4. Open `/manage/tamales-la-abuela` → **Demo owner access**. Upload a profile photo (watch the card update) and try the AI updater: *"Sold out of chicken tamales this weekend, add Atole for $5."*
 
-The two seeded businesses are **fictional demos**, so the app works on first boot with no setup.
+The seeded business is a **fictional demo**, so the app works on first boot with no setup.
 
 ## 🧭 Routes
 
