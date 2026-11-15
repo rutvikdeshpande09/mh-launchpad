@@ -2,14 +2,14 @@
 
 :root {
   /* Cream + black, with one bright orange reserved for the buttons we want people to press. */
-  --background: #f4ecdc;
+  --background: #eadcc0;
   --surface: #fffaf0;
   --foreground: #15120e;
   --ink: #15120e;
-  --muted: #5b5346;
-  --line: #d6c9ae;
-  --edge: #8a7f6a;      /* input outlines: 3:1 against cream */
-  --brand: #b4400a;     /* darker orange for text/links, readable on cream (4.8:1) */
+  --muted: #4f473b;
+  --line: #c9b995;
+  --edge: #7a6f5a;      /* input outlines: 3:1 against cream */
+  --brand: #962f04;     /* darker orange for text/links, readable on the cream backdrop (5:1+) */
   --cta: #ff6a13;       /* bright orange for primary buttons; black text on it is 6.5:1 */
 }
 
@@ -46,7 +46,7 @@ body::before {
     radial-gradient(60rem 46rem at 94% 106%, rgba(56, 160, 240, 0.34), transparent 64%),
     radial-gradient(50rem 40rem at -6% 100%, rgba(255, 120, 160, 0.34), transparent 64%),
     radial-gradient(44rem 30rem at 50% 48%, rgba(255, 196, 130, 0.22), transparent 70%),
-    linear-gradient(180deg, #fbf4e6 0%, #f3e8d2 100%);
+    linear-gradient(180deg, #f1e3c6 0%, #e2cfa8 100%);
 }
 /* Star dust: sparse tiles of different sizes so the pattern never looks like a grid. */
 body::after {
@@ -100,7 +100,7 @@ body::after {
 /* Everything else stays quiet: cream and black. */
 .btn-ghost { background: var(--surface); color: var(--ink); }
 .btn-ghost:hover:not(:disabled) { background: var(--ink); color: var(--background); }
-.card { background: rgba(255, 250, 240, 0.92); border: 1.5px solid var(--ink); border-radius: 1rem; }
+.card { background: rgba(255, 251, 243, 0.97); border: 1.5px solid var(--ink); border-radius: 1rem; }
 .field {
   width: 100%;
   border: 1.5px solid var(--edge);
