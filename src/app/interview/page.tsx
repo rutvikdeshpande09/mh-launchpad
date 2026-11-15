@@ -218,8 +218,8 @@ function Interview() {
         <label className="flex items-start gap-3 rounded-xl bg-amber-50 p-3 text-sm">
           <input type="checkbox" className="mt-1" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
           <span>
-            The business owner agreed to be interviewed, to have their answers processed by AI (Google Gemini), and to have a public
-            website made about their business. <strong>No street address or phone number will be published.</strong>
+            The owner agreed to be interviewed, to have their answers processed by AI (Google Gemini), and to have a <strong>private draft</strong>
+            website made. <strong>Nothing is published unless the owner approves it, and no street address or phone number is ever published.</strong>
           </span>
         </label>
       </section>
@@ -254,7 +254,7 @@ function Interview() {
           maxLength={500}
           value={customRequest}
           onChange={(e) => setCustomRequest(e.target.value)}
-          placeholder="e.g. Make it warm and playful. Put catering first. Keep sentences short. Mention that we use organic ingredients."
+          placeholder="e.g. Friendly, warm tone. Keep sentences short. Put our most popular item first."
         />
         <p className="mt-1 text-xs text-muted">{customRequest.length}/500</p>
       </section>

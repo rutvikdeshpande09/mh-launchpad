@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { PILOT } from "@/lib/pilot";
-import { listBusinesses } from "@/lib/store";
+import { listAllBusinesses, listBusinesses } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +14,8 @@ const STEPS = [
 
 export default async function Home() {
   const businesses = await listBusinesses();
-  const liveReal = businesses.filter((b) => !b.isDemo).length; // real businesses, counted live
+  const liveReal = businesses.filter((b) => !b.isDemo).length; // real sites the owner has approved, counted live
+  const builtReal = (await listAllBusinesses()).filter((b) => !b.isDemo).length; // includes private drafts
   return (
     <>
       <section className="relative isolate overflow-hidden px-4 pb-24 pt-16 text-center">
@@ -74,7 +75,8 @@ export default async function Home() {
             {[
               [PILOT.businessesCalled, "businesses called"],
               [PILOT.agreed, "said yes"],
-              [liveReal, "sites live"],
+              [builtReal, "sites built"],
+              [liveReal, "live, owner-approved"],
             ].map(([n, label]) => (
               <div key={label}>
                 <dt className="text-sm opacity-80">{label}</dt>

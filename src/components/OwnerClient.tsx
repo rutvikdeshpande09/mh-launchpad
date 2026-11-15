@@ -123,8 +123,8 @@ export default function OwnerClient() {
       <div className="mx-auto max-w-md px-4 py-14">
         <h1 className="text-3xl font-extrabold">For business owners</h1>
         <p className="mt-2 text-muted">
-          Get a free website and digital business card. Create your account, tell us your business name, and choose the student ambassador
-          who will interview you.
+          Get a free website and digital business card for your business or hobby. Tell us what to call it, and choose the student ambassador
+          who will interview you. <strong>Nothing goes public until you approve it.</strong> Keep it private as long as you like.
         </p>
         <div className="card mt-6 space-y-4 p-6">
           {checking ? (
@@ -199,10 +199,15 @@ export default function OwnerClient() {
         </p>
       )}
 
-      <section className="card mt-8 space-y-4 p-6">
-        <h2 className="text-lg font-bold">1. Tell us about your business</h2>
+      <p className="mt-6 rounded-xl bg-teal-50 p-4 text-sm text-teal-900">
+        🔒 Your page stays a <strong>private draft</strong> until you approve it. You can keep it private as long as you like and hide it any time.
+        Your email is only used to sign in and is never shown publicly.
+      </p>
+
+      <section className="card mt-6 space-y-4 p-6">
+        <h2 className="text-lg font-bold">1. Tell us about your business or hobby</h2>
         <label className="block text-sm font-semibold">
-          Business name
+          Business or shop name (a hobby is fine)
           <input className="field mt-1" value={businessName} onChange={(e) => setBusinessName(e.target.value)} maxLength={80} />
         </label>
         <div className="grid gap-4 sm:grid-cols-2">
