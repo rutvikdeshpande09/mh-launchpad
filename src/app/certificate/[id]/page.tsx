@@ -25,7 +25,7 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <div className="card relative overflow-hidden border-4 border-double p-8 text-center sm:p-12" style={{ borderColor: "#b45309" }}>
+      <div className="card relative overflow-hidden p-8 text-center sm:p-12" style={{ border: "5px double #b45309" }}>
         <p className="text-xs font-bold uppercase tracking-[0.3em] text-brand">MH Launchpad · Tech Ambassador Program</p>
         <h1 className="mt-3 text-3xl font-black sm:text-4xl">Certificate of Volunteer Service</h1>
         <p className="mt-8 text-muted">This certifies that</p>

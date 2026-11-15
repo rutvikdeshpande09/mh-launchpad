@@ -57,7 +57,7 @@ export default async function Home() {
       </section>
 
       <section aria-label="Pilot results" className="mx-auto mt-10 max-w-6xl px-4">
-        <div className="card flex flex-wrap items-center justify-between gap-x-8 gap-y-4 bg-ink px-6 py-5 !text-background">
+        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 rounded-2xl border-[1.5px] border-ink bg-ink px-6 py-5 text-background">
           <p className="text-sm font-bold uppercase tracking-widest text-cta">Our pilot in Mountain House · as of {PILOT.asOf}</p>
           <dl className="flex flex-wrap gap-x-10 gap-y-3">
             {[

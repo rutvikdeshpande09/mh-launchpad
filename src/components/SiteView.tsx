@@ -97,7 +97,7 @@ export default function SiteView({ business, preview = false }: { business: Busi
 
       {/* ---------- announcement ---------- */}
       {hasAnnouncement && (
-        <div className="mx-auto -mt-6 max-w-3xl px-4">
+        <div className="relative z-10 mx-auto mt-8 max-w-3xl px-4">
           <motion.div
             initial={reduce ? false : { opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
