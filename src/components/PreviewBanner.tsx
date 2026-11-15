@@ -41,6 +41,9 @@ export default function PreviewBanner({ slug, token }: { slug: string; token: st
             </p>
             <div className="flex items-center gap-3">
               {error && <span className="text-sm text-red-700">{error}</span>}
+              <Link href={`/edit/${slug}?draft=${token}`} className="btn btn-ghost !py-1.5 text-sm">
+                Edit draft
+              </Link>
               <button type="button" className="btn btn-primary !py-1.5 text-sm" onClick={publish} disabled={busy}>
                 {busy && <Loader2 className="animate-spin" size={16} />} Approve &amp; publish
               </button>

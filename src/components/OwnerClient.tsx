@@ -245,7 +245,7 @@ export default function OwnerClient() {
               const on = chosen === a.id;
               return (
                 <li key={a.id}>
-                  <label className={`block cursor-pointer rounded-xl border-2 p-4 ${on ? "border-brand bg-brand/5" : "border-line bg-white"}`}>
+                  <label className={`block cursor-pointer rounded-xl border-2 p-4 ${on ? "border-ink bg-cta/25" : "border-line bg-white"}`}>
                     <input type="radio" name="ambassador" className="sr-only" checked={on} onChange={() => setChosen(a.id)} />
                     <span className="flex items-center justify-between gap-2">
                       <span className="font-bold">{a.name}</span>

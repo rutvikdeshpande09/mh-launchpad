@@ -34,6 +34,7 @@ function Interview() {
   const [altLanguage, setAltLanguage] = useState("es");
   const [ownerEmail, setOwnerEmail] = useState("");
   const [consent, setConsent] = useState(false);
+  const [customRequest, setCustomRequest] = useState("");
   const [answers, setAnswers] = useState<AnswerState[]>(QUESTIONS.map(() => ({ text: "", audio: null })));
   const [photos, setPhotos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -113,6 +114,7 @@ function Interview() {
         ...(request ? { requestId: request.id } : { ownerEmail: ownerEmail.trim() }),
         consent: true,
         photos,
+        ...(customRequest.trim() ? { customRequest: customRequest.trim() } : {}),
         answers: answers.map((a) => ({
           ...(a.text.trim() ? { text: a.text.trim() } : {}),
           ...(a.audio ? { audio: { data: a.audio.data, mimeType: a.audio.mimeType } } : {}),
@@ -241,6 +243,20 @@ function Interview() {
             </div>
           </div>
         ))}
+      </section>
+
+      <section className="card mt-6 p-6">
+        <h2 className="font-bold">Custom requests for the website (optional)</h2>
+        <p className="mt-1 text-sm text-muted">Tell the AI how the owner wants the site to feel. It follows these when writing, within the privacy rules.</p>
+        <textarea
+          className="field mt-3"
+          rows={3}
+          maxLength={500}
+          value={customRequest}
+          onChange={(e) => setCustomRequest(e.target.value)}
+          placeholder="e.g. Make it warm and playful. Put catering first. Keep sentences short. Mention that we use organic ingredients."
+        />
+        <p className="mt-1 text-xs text-muted">{customRequest.length}/500</p>
       </section>
 
       <section className="card mt-6 p-6">

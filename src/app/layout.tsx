@@ -16,21 +16,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
-        <header className="sticky top-0 z-40 border-b border-line bg-background/85 backdrop-blur">
+        <header className="sticky top-0 z-40 border-b-2 border-ink bg-background">
           <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
             <Link href="/" className="flex items-center gap-2 font-bold tracking-tight">
-              <span className="grid size-8 place-items-center rounded-lg bg-brand text-white">🚀</span>
+              <span className="grid size-8 place-items-center rounded-lg bg-ink text-base">🚀</span>
               MH Launchpad
             </Link>
             <div className="flex items-center gap-1 text-sm font-medium sm:gap-3">
-              <Link href="/#explore" className="rounded-full px-3 py-1.5 hover:bg-black/5">Explore</Link>
-              <Link href="/owner" className="rounded-full px-3 py-1.5 hover:bg-black/5">For businesses</Link>
-              <Link href="/ambassador" className="rounded-full px-3 py-1.5 hover:bg-black/5">Ambassadors</Link>
+              <Link href="/#explore" className="rounded-lg px-3 py-1.5 hover:bg-ink hover:text-background">Explore</Link>
+              <Link href="/creations" className="rounded-lg px-3 py-1.5 hover:bg-ink hover:text-background">My creations</Link>
+              <Link href="/owner" className="rounded-lg px-3 py-1.5 hover:bg-ink hover:text-background">For businesses</Link>
+              <Link href="/ambassador" className="rounded-lg px-3 py-1.5 hover:bg-ink hover:text-background">Ambassadors</Link>
             </div>
           </nav>
         </header>
         <main className="flex-1">{children}</main>
-        <footer className="border-t border-line px-4 py-8 text-center text-sm text-muted">
+        <footer className="bg-ink px-4 py-8 text-center text-sm text-background">
           <p>
             MH Launchpad is an independent project by Mountain House High School students.
           </p>

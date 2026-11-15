@@ -32,6 +32,7 @@ interface Mem {
   businesses: Map<string, Business>;
   owners: Map<string, string>; // slug -> owner email
   certs: Map<string, Certificate>;
+  certAmb: Map<string, string>; // certificate id -> ambassador id (so ambassadors can find what they created)
   inquiries: Map<string, Inquiry[]>;
 }
 const g = globalThis as unknown as { __mh?: Mem };
@@ -41,11 +42,13 @@ const mem: Mem = (g.__mh ??= {
   businesses: new Map(SEED_BUSINESSES.map((b) => [b.slug, structuredClone(b)])),
   owners: new Map(),
   certs: new Map(),
+  certAmb: new Map(),
   inquiries: new Map(),
 });
 
 mem.ambassadors ??= new Map(); // dev hot-reload may hold an older shape
 mem.requests ??= new Map();
+mem.certAmb ??= new Map();
 
 // ---------- row mapping ----------
 type Row = Record<string, unknown>;
@@ -372,6 +375,7 @@ export async function createCertificate(input: {
   };
   if (!usingSupabase) {
     mem.certs.set(cert.id, cert);
+    mem.certAmb.set(cert.id, input.ambassadorId);
     return cert;
   }
   await admin().from("service_certificates").insert({
@@ -434,4 +438,32 @@ export async function uploadImage(dataUrl: string, folder: "photos" | "avatars")
     return dataUrl;
   }
   return admin().storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+}
+
+// ---------- "my creations" ----------
+/** Sites an ambassador interviewed for (drafts and hidden ones included: they are theirs). */
+export async function listCreationsForAmbassador(ambassadorId: string): Promise<Business[]> {
+  if (!usingSupabase) {
+    const slugs = [...mem.certAmb.entries()].filter(([, a]) => a === ambassadorId).map(([id]) => mem.certs.get(id)?.businessSlug);
+    return slugs.map((sl) => (sl ? mem.businesses.get(sl) : undefined)).filter((b): b is Business => Boolean(b)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+  if (!/^[0-9a-f-]{36}$/i.test(ambassadorId)) return [];
+  const { data: certs } = await admin().from("service_certificates").select("business_slug").eq("ambassador_id", ambassadorId);
+  const slugs = [...new Set((certs ?? []).map((c) => c.business_slug as string))];
+  if (slugs.length === 0) return [];
+  const { data } = await admin().from("businesses").select("*").in("slug", slugs).order("created_at", { ascending: false });
+  return (data ?? []).map(toBusiness);
+}
+
+/** Sites a signed-in owner owns. */
+export async function listBusinessesForOwner(email: string): Promise<Business[]> {
+  const e = email.toLowerCase();
+  if (!usingSupabase) {
+    return [...mem.owners.entries()].filter(([, o]) => o === e).map(([sl]) => mem.businesses.get(sl)).filter((b): b is Business => Boolean(b));
+  }
+  const { data: owned } = await admin().from("business_owners").select("business_id").eq("email", e);
+  const ids = (owned ?? []).map((o) => o.business_id as string);
+  if (ids.length === 0) return [];
+  const { data } = await admin().from("businesses").select("*").in("id", ids).order("created_at", { ascending: false });
+  return (data ?? []).map(toBusiness);
 }

@@ -177,7 +177,7 @@ export default function AmbassadorDashboard({ session }: { session: AmbassadorSe
               return (
                 <label
                   key={l.code}
-                  className={`cursor-pointer rounded-full border px-3 py-1.5 text-sm font-medium ${on ? "border-brand bg-brand text-white" : "border-line bg-white"}`}
+                  className={`cursor-pointer rounded-full border px-3 py-1.5 text-sm font-medium ${on ? "border-ink bg-cta font-bold text-ink" : "border-line bg-white"}`}
                 >
                   <input
                     type="checkbox"
@@ -206,6 +206,7 @@ export default function AmbassadorDashboard({ session }: { session: AmbassadorSe
       </section>
 
       <div className="mt-6 flex flex-wrap gap-3">
+        <Link href="/creations" className="btn btn-primary">My creations</Link>
         <Link href="/interview" className="btn btn-ghost">Interview a business I contacted myself</Link>
       </div>
     </div>

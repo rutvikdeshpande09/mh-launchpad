@@ -15,9 +15,9 @@ export default async function Home() {
   return (
     <>
       <section className="relative isolate overflow-hidden px-4 pb-24 pt-16 text-center">
-        <div className="floaty absolute -left-20 top-0 -z-10 size-72 rounded-full bg-brand/10" />
-        <div className="floaty absolute -right-16 bottom-0 -z-10 size-80 rounded-[40%] bg-brand-2/10" />
-        <p className="mx-auto w-fit rounded-full border border-line bg-white px-4 py-1 text-sm font-semibold text-brand">
+        <div className="floaty absolute -left-20 top-0 -z-10 size-72 rounded-full bg-cta/25" />
+        <div className="floaty absolute -right-16 bottom-0 -z-10 size-80 rounded-[40%] bg-ink/5" />
+        <p className="mx-auto w-fit rounded-full border-2 border-ink bg-surface px-4 py-1 text-sm font-bold text-ink">
           A Mountain House High School project
         </p>
         <h1 className="mx-auto mt-5 max-w-3xl text-4xl font-black leading-tight tracking-tight sm:text-6xl">
@@ -67,7 +67,7 @@ export default async function Home() {
                   {b.isDemo && <span className="rounded-full bg-black/5 px-2 py-0.5 text-xs font-semibold">Demo</span>}
                 </div>
                 <p className="mt-1 text-sm text-muted">{b.content.tagline.en}</p>
-                {b.altLang.code !== "en" && <p className="mt-3 text-xs font-semibold text-brand-2">English + {b.altLang.label}</p>}
+                {b.altLang.code !== "en" && <p className="mt-3 text-xs font-semibold text-ink">English + {b.altLang.label}</p>}
               </div>
             </Link>
           ))}

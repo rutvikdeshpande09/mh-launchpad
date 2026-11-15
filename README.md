@@ -38,6 +38,8 @@ The seeded business is a **fictional demo**, so the app works on first boot with
 |---|---|
 | `/` | Landing page and directory of businesses |
 | `/ambassador` | Student sign-up (`@lammersvilleusd.net`) with a passcode and a 60-second AI-graded skill check. Then a public profile (languages, bio), the inbox of interview requests, and sign-in on any device. Judge demo toggle included |
+| `/creations` | **My creations**: every site you interviewed for (ambassador) or own (owner), with Preview, Edit and Manage |
+| `/edit/[slug]` | Manual editor for every text field in both languages (items, highlights, hours, notices). Works for the owner, or for whoever holds the private draft link while the site is still a draft |
 | `/owner` | Business-owner sign-up/sign-in by email link: enter your business name, pick the ambassador who will interview you, and track your requests |
 | `/interview` | 5-question interview (text or in-browser voice recording in 7 languages) + photo upload → generates the site |
 | `/sites/[slug]` | Public 3D business website, bilingual toggle, masked inquiry form |
@@ -94,6 +96,7 @@ Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Framer Motion (3D til
 ## 🔒 Privacy and safety by design
 
 - **Owners choose, nobody is assigned.** Businesses pick their own ambassador. Ambassadors appear only by first name + last initial, languages and a short bio. The owner's login email is never shown to the ambassador; only the contact detail the owner chooses to share with that one student. Demo and real accounts are kept in separate pools.
+- **Custom requests.** When generating a site, the ambassador (or the owner's note) can add free-text wishes such as tone, emphasis or order. They guide the AI but can never override the privacy and honesty rules, and manual edits can't contain phone numbers or emails.
 - **Drafts and an off switch.** New sites are private drafts until someone with the draft link approves them, and owners can hide their site at any time from the owner portal.
 - **Consent first.** The interview can't start without confirming the owner agreed to be interviewed, to AI processing, and to a public page.
 - **No private details published.** The AI is told never to output street addresses, phone numbers, emails or children's names; the public area is only "Mountain House, CA".

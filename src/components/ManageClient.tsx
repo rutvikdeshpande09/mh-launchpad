@@ -273,6 +273,9 @@ export default function ManageClient({ initial }: { initial: Business }) {
           >
             <ExternalLink size={16} /> {business.published ? "View live site" : "Preview draft"}
           </Link>
+          <Link href={`/edit/${business.slug}`} className="btn btn-primary !py-2 text-sm">
+            Edit content
+          </Link>
           <button
             type="button"
             className="btn btn-ghost !py-2 text-sm"
