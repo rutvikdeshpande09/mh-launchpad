@@ -20,13 +20,13 @@ export default async function Home() {
       <section className="relative isolate overflow-hidden px-4 pb-24 pt-16 text-center">
         {/* orbit rings: decorative only */}
         <svg aria-hidden className="pointer-events-none absolute inset-0 -z-10 h-full w-full" viewBox="0 0 1200 760" preserveAspectRatio="xMidYMid slice">
-          <g className="orbit" opacity="0.5">
-            <ellipse cx="600" cy="380" rx="520" ry="250" fill="none" stroke="#15120e" strokeOpacity="0.14" strokeDasharray="3 9" transform="rotate(-14 600 380)" />
+          <g className="orbit" opacity="0.9">
+            <ellipse cx="600" cy="380" rx="520" ry="250" fill="none" stroke="#15120e" strokeOpacity="0.32" strokeDasharray="3 9" transform="rotate(-14 600 380)" />
             <circle cx="1118" cy="318" r="9" fill="#ff6a13" />
             <circle cx="1118" cy="318" r="16" fill="#ff6a13" fillOpacity="0.18" />
           </g>
-          <g className="orbit-rev" opacity="0.5">
-            <ellipse cx="600" cy="380" rx="400" ry="190" fill="none" stroke="#15120e" strokeOpacity="0.12" transform="rotate(18 600 380)" />
+          <g className="orbit-rev" opacity="0.9">
+            <ellipse cx="600" cy="380" rx="400" ry="190" fill="none" stroke="#15120e" strokeOpacity="0.26" transform="rotate(18 600 380)" />
             <circle cx="214" cy="470" r="7" fill="#15120e" fillOpacity="0.7" />
             <circle cx="990" cy="288" r="5" fill="#8b78ff" />
           </g>
