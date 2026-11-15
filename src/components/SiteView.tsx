@@ -29,7 +29,13 @@ export default function SiteView({ business, preview = false }: { business: Busi
   const hasAnnouncement = Boolean(t(c.announcement).trim());
 
   return (
-    <div lang={langAttr} className="overflow-x-clip bg-[#fffaf3]">
+    <div
+      lang={langAttr}
+      className="overflow-x-clip bg-[#fffaf3]"
+      style={{
+        backgroundImage: `radial-gradient(40rem 30rem at 4% 40%, ${primary}1f, transparent 65%), radial-gradient(40rem 30rem at 98% 62%, ${accent}1f, transparent 65%), radial-gradient(44rem 30rem at 10% 96%, ${primary}14, transparent 65%)`,
+      }}
+    >
       {/* ---------- hero ---------- */}
       <section
         ref={heroRef}

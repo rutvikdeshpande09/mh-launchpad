@@ -18,7 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
-        <header className="sticky top-0 z-40 border-b-2 border-ink bg-background">
+        <header className="sticky top-0 z-40 border-b-2 border-ink bg-background/85 backdrop-blur">
           <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
             <Link href="/" className="flex items-center gap-2 font-bold tracking-tight">
               <Image src="/logo-icon.png" alt="" width={36} height={36} priority className="size-9 rounded-lg border-2 border-ink" />
