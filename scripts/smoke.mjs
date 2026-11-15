@@ -15,7 +15,8 @@ const WITH_AI = args.includes("--ai");
 let passed = 0;
 let failed = 0;
 const check = (label, ok, detail = "") => {
-  ok ? passed++ : failed++;
+  if (ok) passed++;
+  else failed++;
   console.log(`${ok ? "PASS" : "FAIL"}  ${label}${ok || !detail ? "" : `  (${detail})`}`);
 };
 
