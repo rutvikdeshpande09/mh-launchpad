@@ -142,6 +142,23 @@ export default function ManageClient({ initial }: { initial: Business }) {
     }
   }
 
+  async function setListing(listed: boolean) {
+    setBusy(true);
+    setMessage(null);
+    try {
+      await postJson("/api/publish", { slug: business.slug, published: business.published, listed }, headers());
+      setBusiness((b) => ({ ...b, listed }));
+      setMessage({
+        kind: "ok",
+        text: listed ? "✅ Your site is now shown on the MH Launchpad homepage." : "✅ Your site is no longer listed on the homepage. People with your link can still open it.",
+      });
+    } catch (e) {
+      setMessage({ kind: "err", text: e instanceof Error ? e.message : "Could not change the listing." });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function setVisibility(published: boolean) {
     setBusy(true);
     setMessage(null);
@@ -460,6 +477,15 @@ export default function ManageClient({ initial }: { initial: Business }) {
         >
           {business.published ? "Hide my site" : "Publish my site"}
         </button>
+        {business.published && (
+          <label className="flex w-full cursor-pointer items-start gap-3 rounded-xl bg-black/[.04] p-3 text-sm">
+            <input type="checkbox" className="mt-1" checked={!business.listed} disabled={busy} onChange={(e) => setListing(!e.target.checked)} />
+            <span>
+              <strong>Don&apos;t show my site on the MH Launchpad homepage.</strong> It stays public for anyone you give the link to, but it isn&apos;t
+              listed or promoted to the community.
+            </span>
+          </label>
+        )}
       </section>
 
       {/* private inbox */}

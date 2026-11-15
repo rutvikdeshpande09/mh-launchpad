@@ -38,6 +38,7 @@ create table if not exists public.businesses (
   ambassador_name text not null default '',
   is_demo         boolean not null default false,
   published       boolean not null default true,   -- false = private draft / hidden by owner
+  listed          boolean not null default true,   -- false = public by link only, not shown on the homepage
   sort_order      integer,                         -- homepage position chosen by an organizer (1 = first); null = after those
   created_at      timestamptz not null default now()
 );
@@ -45,6 +46,7 @@ create table if not exists public.businesses (
 -- Migration for databases created before drafts existed (safe to run more than once):
 alter table public.businesses add column if not exists published boolean not null default true;
 alter table public.businesses add column if not exists sort_order integer;
+alter table public.businesses add column if not exists listed boolean not null default true;
 
 -- Owner emails live in their own table so they are never exposed with the public site.
 create table if not exists public.business_owners (
@@ -115,7 +117,8 @@ alter table public.interview_requests   enable row level security;
 
 -- Public websites are readable by anyone.
 drop policy if exists "public can read businesses" on public.businesses;
-create policy "public can read businesses" on public.businesses for select using (published = true);
+-- Unlisted sites are not enumerable through the public API; the server (service role) still serves them by link.
+create policy "public can read businesses" on public.businesses for select using (published = true and listed = true);
 
 -- Certificates can be verified by anyone who has the (unguessable) id; they hold no email.
 drop policy if exists "public can read certificates" on public.service_certificates;

@@ -14,6 +14,7 @@ interface Site {
   primary: string;
   accent: string;
   published: boolean;
+  listed: boolean;
   isDemo: boolean;
   createdAt: string;
   ambassadorName: string;
@@ -57,7 +58,7 @@ export default function OrganizerClient() {
     }
     setDenied("");
     setSites(data.sites);
-    setOrder(data.sites.filter((s) => s.published).map((s) => s.slug));
+    setOrder(data.sites.filter((s) => s.published && s.listed).map((s) => s.slug));
     setDirty(false);
   }, [headers]);
 
@@ -72,7 +73,7 @@ export default function OrganizerClient() {
         else if (res.ok && data.sites) {
           setDenied("");
           setSites(data.sites);
-          setOrder(data.sites.filter((s) => s.published).map((s) => s.slug));
+          setOrder(data.sites.filter((s) => s.published && s.listed).map((s) => s.slug));
           setDirty(false);
         } else setMessage({ kind: "err", text: data.error ?? "Could not load the sites." });
       })
@@ -169,6 +170,7 @@ export default function OrganizerClient() {
   const byslug = new Map((sites ?? []).map((s) => [s.slug, s]));
   const published = order.map((slug) => byslug.get(slug)).filter((s): s is Site => Boolean(s));
   const unpublished = (sites ?? []).filter((s) => !s.published);
+  const unlisted = (sites ?? []).filter((s) => s.published && !s.listed);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
@@ -230,6 +232,10 @@ export default function OrganizerClient() {
                       <Link href={`/sites/${s.slug}`} className="btn btn-ghost !px-3 !py-2 text-sm"><Eye size={16} /> View</Link>
                       <Link href={`/edit/${s.slug}`} className="btn btn-ghost !px-3 !py-2 text-sm"><Pencil size={16} /> Edit</Link>
                       <button type="button" className="btn btn-ghost !px-3 !py-2 text-sm" disabled={busy}
+                        onClick={() => act(() => postJson("/api/organizer", { action: "listing", slug: s.slug, listed: false }, headers()), `✅ ${s.name} is now off the homepage (still public by link).`)}>
+                        Unlist
+                      </button>
+                      <button type="button" className="btn btn-ghost !px-3 !py-2 text-sm" disabled={busy}
                         onClick={() => act(() => postJson("/api/organizer", { action: "publish", slug: s.slug, published: false }, headers()), `✅ ${s.name} is now hidden.`)}>
                         <EyeOff size={16} /> Hide
                       </button>
@@ -239,6 +245,36 @@ export default function OrganizerClient() {
               </ol>
             )}
           </section>
+
+          {unlisted.length > 0 && (
+            <section className="card mt-6 p-6">
+              <h2 className="text-lg font-bold">Public by link only ({unlisted.length})</h2>
+              <p className="text-sm text-muted">Published, but not shown on the homepage. Owners chose this, so only list one if they ask.</p>
+              <ul className="mt-4 divide-y divide-line">
+                {unlisted.map((s) => (
+                  <li key={s.slug} className="flex flex-wrap items-center gap-3 py-3">
+                    <Thumb s={s} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold">{s.name}</p>
+                      <p className="truncate text-xs text-muted">{s.category}</p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Link href={`/sites/${s.slug}`} className="btn btn-ghost !px-3 !py-2 text-sm"><Eye size={16} /> View</Link>
+                      <Link href={`/edit/${s.slug}`} className="btn btn-ghost !px-3 !py-2 text-sm"><Pencil size={16} /> Edit</Link>
+                      <button type="button" className="btn btn-ghost !px-3 !py-2 text-sm" disabled={busy}
+                        onClick={() => act(() => postJson("/api/organizer", { action: "listing", slug: s.slug, listed: true }, headers()), `✅ ${s.name} is now on the homepage.`)}>
+                        List on homepage
+                      </button>
+                      <button type="button" className="btn btn-ghost !px-3 !py-2 text-sm" disabled={busy}
+                        onClick={() => act(() => postJson("/api/organizer", { action: "publish", slug: s.slug, published: false }, headers()), `✅ ${s.name} is now hidden.`)}>
+                        <EyeOff size={16} /> Hide
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           <section className="card mt-6 p-6">
             <h2 className="text-lg font-bold">Not published ({unpublished.length})</h2>

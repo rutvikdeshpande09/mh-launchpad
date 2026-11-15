@@ -10,12 +10,13 @@ export default function PreviewBanner({ slug, token }: { slug: string; token: st
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
+  const [unlisted, setUnlisted] = useState(false);
 
   async function publish() {
     setBusy(true);
     setError("");
     try {
-      await postJson("/api/publish", { slug, published: true }, { "x-draft-token": token });
+      await postJson("/api/publish", { slug, published: true, listed: !unlisted }, { "x-draft-token": token });
       setDone(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not publish.");
@@ -39,7 +40,11 @@ export default function PreviewBanner({ slug, token }: { slug: string; token: st
             <p className="flex items-center gap-2 text-sm font-semibold sm:text-base">
               <Eye size={18} /> Draft preview. Only people with this private link can see it. Check the details with the owner, then publish.
             </p>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
+                <input type="checkbox" checked={unlisted} onChange={(e) => setUnlisted(e.target.checked)} />
+                Don&apos;t list on the homepage
+              </label>
               {error && <span className="text-sm text-red-700">{error}</span>}
               <Link href={`/edit/${slug}?draft=${token}`} className="btn btn-ghost !py-1.5 text-sm">
                 Edit draft

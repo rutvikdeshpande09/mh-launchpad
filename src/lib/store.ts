@@ -62,6 +62,7 @@ const toBusiness = (r: Row): Business => ({
   ambassadorName: (r.ambassador_name as string) ?? "",
   isDemo: Boolean(r.is_demo),
   published: r.published !== false, // column may not exist before the migration: treat as published
+  listed: r.listed !== false, // column may not exist before the migration: treat as listed
   sortOrder: typeof r.sort_order === "number" ? (r.sort_order as number) : null,
   createdAt: r.created_at as string,
 });
@@ -98,12 +99,12 @@ const byDisplayOrder = (a: Business, b: Business) => {
   return x !== y ? x - y : b.createdAt.localeCompare(a.createdAt);
 };
 
-/** Public directory: only published sites, in the organizer's order. */
+/** Public directory: only published AND listed sites, in the organizer's order. */
 export async function listBusinesses(): Promise<Business[]> {
-  if (!usingSupabase) return [...mem.businesses.values()].filter((b) => b.published).sort(byDisplayOrder);
+  if (!usingSupabase) return [...mem.businesses.values()].filter((b) => b.published && b.listed).sort(byDisplayOrder);
   await ensureSeed();
   const { data } = await admin().from("businesses").select("*").order("created_at", { ascending: false }).limit(200);
-  return (data ?? []).map(toBusiness).filter((b) => b.published).sort(byDisplayOrder);
+  return (data ?? []).map(toBusiness).filter((b) => b.published && b.listed).sort(byDisplayOrder);
 }
 
 /** Organizer view: every site, published or not. */
@@ -169,6 +170,7 @@ export async function createBusiness(input: {
       ambassadorName: input.ambassadorName,
       isDemo: Boolean(input.isDemo),
       published: false, // new sites start as private drafts until approved
+      listed: true,
       sortOrder: null,
       createdAt: new Date().toISOString(),
     };
@@ -214,6 +216,18 @@ export async function setPublished(slug: string, published: boolean): Promise<bo
   }
   const { error } = await admin().from("businesses").update({ published }).eq("slug", slug);
   if (error) console.warn("setPublished failed:", error.message);
+  return !error;
+}
+
+/** Show or hide a published site in the homepage directory. Unlisted sites stay reachable by direct link. */
+export async function setListed(slug: string, listed: boolean): Promise<boolean> {
+  if (!usingSupabase) {
+    const b = mem.businesses.get(slug);
+    if (b) b.listed = listed;
+    return Boolean(b);
+  }
+  const { error } = await admin().from("businesses").update({ listed }).eq("slug", slug);
+  if (error) console.warn("setListed failed:", error.message);
   return !error;
 }
 

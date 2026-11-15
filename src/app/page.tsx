@@ -14,8 +14,9 @@ const STEPS = [
 
 export default async function Home() {
   const businesses = await listBusinesses();
-  const liveReal = businesses.filter((b) => !b.isDemo).length; // real sites the owner has approved, counted live
-  const builtReal = (await listAllBusinesses()).filter((b) => !b.isDemo).length; // includes private drafts
+  const all = (await listAllBusinesses()).filter((b) => !b.isDemo);
+  const builtReal = all.length; // includes private drafts
+  const liveReal = all.filter((b) => b.published).length; // owner-approved, including ones kept off the homepage
   return (
     <>
       <section className="relative isolate overflow-hidden px-4 pb-24 pt-16 text-center">

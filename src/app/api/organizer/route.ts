@@ -3,7 +3,7 @@ import { authorizeOrganizer, signedInEmail } from "@/lib/owner";
 import { signDraftToken } from "@/lib/preview";
 import { clientIp, rateLimit } from "@/lib/ratelimit";
 import type { Business } from "@/lib/schemas";
-import { deleteBusiness, getBusiness, listAllBusinesses, setPublished, setSortOrders } from "@/lib/store";
+import { deleteBusiness, getBusiness, listAllBusinesses, setListed, setPublished, setSortOrders } from "@/lib/store";
 
 const bad = (message: string, status = 400) => Response.json({ error: message }, { status });
 
@@ -23,6 +23,7 @@ const item = (b: Business) => ({
   primary: b.content.theme.primary,
   accent: b.content.theme.accent,
   published: b.published,
+  listed: b.listed,
   isDemo: b.isDemo,
   createdAt: b.createdAt,
   ambassadorName: b.ambassadorName,
@@ -40,6 +41,7 @@ export async function GET(req: Request) {
 const Body = z.discriminatedUnion("action", [
   z.object({ action: z.literal("reorder"), slugs: z.array(z.string().min(1).max(80)).min(1).max(200) }),
   z.object({ action: z.literal("publish"), slug: z.string().min(1).max(80), published: z.boolean() }),
+  z.object({ action: z.literal("listing"), slug: z.string().min(1).max(80), listed: z.boolean() }),
   z.object({ action: z.literal("delete"), slug: z.string().min(1).max(80) }),
 ]);
 
@@ -68,6 +70,11 @@ export async function POST(req: Request) {
   if (body.action === "publish") {
     const ok = await setPublished(body.slug, body.published);
     return ok ? Response.json({ published: body.published }) : bad("Couldn't save.", 500);
+  }
+
+  if (body.action === "listing") {
+    const ok = await setListed(body.slug, body.listed);
+    return ok ? Response.json({ listed: body.listed }) : bad("Couldn't save. The database update for listing may not have been run yet.", 500);
   }
 
   // delete: only sites that are already hidden or still drafts, so a live site is never removed by one click
