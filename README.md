@@ -38,7 +38,7 @@ Prefer to verify from the terminal? `npm run smoke -- https://mh-launchpad.verce
 | `/creations` | **My creations**: every site you interviewed for (ambassador) or own (owner), with Preview, Edit and Manage |
 | `/edit/[slug]` | Manual editor for every text field in both languages (items, highlights, hours, notices). Works for the owner, or for whoever holds the private draft link while the site is still a draft |
 | `/owner` | Business-owner sign-up/sign-in by email link: enter your business name, pick the ambassador who will interview you, and track your requests |
-| `/interview` | 5-question interview (text or in-browser voice recording in 7 languages) + photo upload → generates the site |
+| `/interview` | 5-question interview (text or in-browser voice recording in 16 languages: English, Hindi, Telugu, Tamil, Bengali, Punjabi, Gujarati, Marathi, Kannada, Malayalam, Urdu, Spanish, Mandarin, Tagalog, Vietnamese and Korean) + photo upload → generates the site |
 | `/sites/[slug]` | Public 3D business website, bilingual toggle, masked inquiry form |
 | `/manage/[slug]` | Owner portal: magic-link login (or demo access), profile photo cropper, live card, colour schemes (presets or custom, auto-adjusted for readability), AI site updater, show/hide the site, private inbox |
 | `/certificate/[id]` | Printable service certificate with a verification QR code |

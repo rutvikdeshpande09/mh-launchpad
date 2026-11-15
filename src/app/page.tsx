@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 const STEPS = [
   { icon: "🎓", title: "Students earn a badge", text: "High schoolers pass a 60-second AI-graded skill check to become Tech Ambassadors." },
-  { icon: "🎙️", title: "A 5-question interview", text: "Speak or type with a home-based owner in English, Telugu, Punjabi, Hindi, Spanish, Mandarin or Tagalog." },
+  { icon: "🎙️", title: "A 5-question interview", text: "Speak or type with a home-based owner in English, Hindi, Tamil, Telugu, Bengali, Punjabi, Gujarati, Spanish, Mandarin and more (16 languages)." },
   { icon: "✨", title: "AI builds the site", text: "Gemini turns the interview into a bilingual 3D website and a shareable digital business card." },
   { icon: "🏅", title: "Everyone gains", text: "Owners get an online home. Students get a certificate for their service hours." },
 ];

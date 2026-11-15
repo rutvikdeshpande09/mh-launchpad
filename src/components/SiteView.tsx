@@ -5,6 +5,7 @@ import { Clock, Languages, MapPin, Send } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import type { BiText, Business } from "@/lib/schemas";
+import { RTL_LANGUAGES } from "@/lib/languages";
 import { EN, getStrings } from "@/lib/ui-strings";
 import { postJson } from "@/lib/client";
 import BusinessCard3D from "./BusinessCard3D";
@@ -31,6 +32,7 @@ export default function SiteView({ business, preview = false }: { business: Busi
   return (
     <div
       lang={langAttr}
+      dir={RTL_LANGUAGES.includes(langAttr) ? "rtl" : "ltr"}
       className="overflow-x-clip bg-[#fffaf3]"
       style={{
         backgroundImage: `radial-gradient(40rem 30rem at 4% 40%, ${primary}38, transparent 65%), radial-gradient(40rem 30rem at 98% 62%, ${accent}38, transparent 65%), radial-gradient(44rem 30rem at 10% 96%, ${primary}26, transparent 65%)`,

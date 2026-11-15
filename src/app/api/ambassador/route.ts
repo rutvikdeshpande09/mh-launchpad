@@ -19,7 +19,7 @@ const Body = z.discriminatedUnion("action", [
   z.object({ action: z.literal("signin"), email: z.string().max(120), passcode: z.string().min(1).max(64) }),
   z.object({
     action: z.literal("profile"),
-    languages: z.array(z.enum(langCodes)).min(1).max(7),
+    languages: z.array(z.enum(langCodes)).min(1).max(LANGUAGES.length),
     bio: z.string().trim().max(160),
     accepting: z.boolean(),
   }),
