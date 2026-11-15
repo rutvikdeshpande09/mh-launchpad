@@ -60,5 +60,15 @@ export function useOwnerSession() {
     window.dispatchEvent(new Event(DEMO_EVENT));
   };
 
-  return { auth, ready: checked, headers, startDemo };
+  const signOut = async () => {
+    await supabase?.auth.signOut();
+    try {
+      sessionStorage.removeItem(DEMO_KEY);
+    } catch {
+      /* ignore */
+    }
+    window.dispatchEvent(new Event(DEMO_EVENT));
+  };
+
+  return { auth, ready: checked, headers, startDemo, supabase, signOut };
 }

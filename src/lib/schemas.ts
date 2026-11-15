@@ -53,6 +53,8 @@ export interface Business {
   isDemo: boolean;
   /** Drafts and hidden sites return 404 to the public. */
   published: boolean;
+  /** Organizer-chosen position on the homepage (1 = first). null = after the ordered ones, newest first. */
+  sortOrder: number | null;
   createdAt: string;
 }
 

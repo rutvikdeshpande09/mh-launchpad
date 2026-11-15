@@ -62,6 +62,7 @@ const toBusiness = (r: Row): Business => ({
   ambassadorName: (r.ambassador_name as string) ?? "",
   isDemo: Boolean(r.is_demo),
   published: r.published !== false, // column may not exist before the migration: treat as published
+  sortOrder: typeof r.sort_order === "number" ? (r.sort_order as number) : null,
   createdAt: r.created_at as string,
 });
 
@@ -90,14 +91,61 @@ export async function getBusiness(slug: string): Promise<Business | null> {
   return data ? toBusiness(data) : null;
 }
 
-/** Public directory: only published sites. */
+/** Organizer's order first (1, 2, 3 ...), then everything else newest first. */
+const byDisplayOrder = (a: Business, b: Business) => {
+  const x = a.sortOrder ?? Number.MAX_SAFE_INTEGER;
+  const y = b.sortOrder ?? Number.MAX_SAFE_INTEGER;
+  return x !== y ? x - y : b.createdAt.localeCompare(a.createdAt);
+};
+
+/** Public directory: only published sites, in the organizer's order. */
 export async function listBusinesses(): Promise<Business[]> {
-  if (!usingSupabase) {
-    return [...mem.businesses.values()].filter((b) => b.published).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  }
+  if (!usingSupabase) return [...mem.businesses.values()].filter((b) => b.published).sort(byDisplayOrder);
   await ensureSeed();
-  const { data } = await admin().from("businesses").select("*").order("created_at", { ascending: false }).limit(60);
-  return (data ?? []).map(toBusiness).filter((b) => b.published);
+  const { data } = await admin().from("businesses").select("*").order("created_at", { ascending: false }).limit(200);
+  return (data ?? []).map(toBusiness).filter((b) => b.published).sort(byDisplayOrder);
+}
+
+/** Organizer view: every site, published or not. */
+export async function listAllBusinesses(): Promise<Business[]> {
+  if (!usingSupabase) return [...mem.businesses.values()].sort(byDisplayOrder);
+  await ensureSeed();
+  const { data } = await admin().from("businesses").select("*").order("created_at", { ascending: false }).limit(500);
+  return (data ?? []).map(toBusiness).sort(byDisplayOrder);
+}
+
+/** Save the homepage order: the given slugs become positions 1..n. Returns false if it could not be saved. */
+export async function setSortOrders(slugs: string[]): Promise<boolean> {
+  if (!usingSupabase) {
+    slugs.forEach((slug, i) => {
+      const b = mem.businesses.get(slug);
+      if (b) b.sortOrder = i + 1;
+    });
+    return true;
+  }
+  for (let i = 0; i < slugs.length; i++) {
+    const { error } = await admin().from("businesses").update({ sort_order: i + 1 }).eq("slug", slugs[i]);
+    if (error) {
+      console.warn("setSortOrders failed:", error.message);
+      return false;
+    }
+  }
+  return true;
+}
+
+/** Permanently delete a site (its owner link and messages go with it). */
+export async function deleteBusiness(slug: string): Promise<boolean> {
+  if (!usingSupabase) return mem.businesses.delete(slug);
+  const { error } = await admin().from("businesses").delete().eq("slug", slug);
+  if (error) console.warn("deleteBusiness failed:", error.message);
+  return !error;
+}
+
+/** Is this email allowed to organize the whole website? (rows in the organizers table) */
+export async function isOrganizerEmail(email: string): Promise<boolean> {
+  if (!usingSupabase) return false;
+  const { data } = await admin().from("organizers").select("email").eq("email", email.toLowerCase()).maybeSingle();
+  return Boolean(data);
 }
 
 export async function createBusiness(input: {
@@ -121,6 +169,7 @@ export async function createBusiness(input: {
       ambassadorName: input.ambassadorName,
       isDemo: Boolean(input.isDemo),
       published: false, // new sites start as private drafts until approved
+      sortOrder: null,
       createdAt: new Date().toISOString(),
     };
     mem.businesses.set(slug, b);

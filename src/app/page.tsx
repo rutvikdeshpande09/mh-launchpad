@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { PILOT } from "@/lib/pilot";
 import { listBusinesses } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +14,7 @@ const STEPS = [
 
 export default async function Home() {
   const businesses = await listBusinesses();
+  const liveReal = businesses.filter((b) => !b.isDemo).length; // real businesses, counted live
   return (
     <>
       <section className="relative isolate overflow-hidden px-4 pb-24 pt-16 text-center">
@@ -54,9 +56,34 @@ export default async function Home() {
         ))}
       </section>
 
+      <section aria-label="Pilot results" className="mx-auto mt-10 max-w-6xl px-4">
+        <div className="card flex flex-wrap items-center justify-between gap-x-8 gap-y-4 bg-ink px-6 py-5 !text-background">
+          <p className="text-sm font-bold uppercase tracking-widest text-cta">Our pilot in Mountain House · as of {PILOT.asOf}</p>
+          <dl className="flex flex-wrap gap-x-10 gap-y-3">
+            {[
+              [PILOT.businessesCalled, "businesses called"],
+              [PILOT.agreed, "said yes"],
+              [liveReal, "sites live"],
+            ].map(([n, label]) => (
+              <div key={label}>
+                <dt className="text-sm opacity-80">{label}</dt>
+                <dd className="text-3xl font-black tabular-nums">{n}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+
       <section id="explore" className="mx-auto max-w-6xl px-4 py-20">
         <h2 className="text-3xl font-extrabold">Local businesses on MH Launchpad</h2>
-        <p className="mt-2 text-muted">The first one is a fictional demo so you can explore right away.</p>
+        <p className="mt-2 text-muted">Real home-based businesses, each launched by a student ambassador and approved by its owner.</p>
+        {businesses.length === 0 && (
+          <div className="card mt-8 p-8 text-center">
+            <p className="text-4xl">🌱</p>
+            <p className="mt-2 font-bold">The first sites are on their way</p>
+            <p className="mt-1 text-sm text-muted">Owners approve their page before it appears here.</p>
+          </div>
+        )}
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {businesses.map((b) => (
             <Link
@@ -85,20 +112,24 @@ export default async function Home() {
 
       <section className="mx-auto max-w-3xl px-4 pb-24">
         <div className="card p-8">
-          <h2 className="text-2xl font-extrabold">Judges: a 2-minute tour</h2>
+          <h2 className="text-2xl font-extrabold">Judges: a 3-minute tour</h2>
           <ol className="mt-4 list-decimal space-y-2 pl-5 text-muted">
-            <li>Open a demo site above. Try the language toggle, the 3D cards and the flip-able business card.</li>
+            <li>Open a site under <a href="#explore" className="font-semibold text-brand underline">Explore</a>. Try the language toggle, the 3D cards and the flip-able business card.</li>
             <li>
-              Go to <Link href="/ambassador" className="font-semibold text-brand underline">Ambassador</Link> and choose{" "}
-              <strong>Judge demo access</strong>.
+              On <Link href="/ambassador" className="font-semibold text-brand underline">Ambassadors</Link>, choose <strong>Judge demo access</strong> and save a
+              public profile (languages and a short bio).
             </li>
             <li>
-              Run the <Link href="/interview" className="font-semibold text-brand underline">interview</Link> (typing is fine) to
-              generate a brand-new <em>draft</em> site and a service certificate, then press <strong>Approve &amp; publish</strong> to make it public.
+              Open <Link href="/owner" className="font-semibold text-brand underline">For businesses</Link> in a private window, choose{" "}
+              <strong>Demo owner access</strong>, enter a business name, pick your ambassador and send the request.
             </li>
             <li>
-              Open <Link href="/manage/tamales-la-abuela" className="font-semibold text-brand underline">the owner portal</Link>,
-              choose <strong>Demo owner access</strong>, and tell the AI &ldquo;Sold out of chicken tamales this weekend, add Atole for $5.&rdquo;
+              Back as the ambassador, <strong>accept</strong> the request and press <strong>Start the interview</strong>. Type short answers (or record your
+              voice), add an optional custom request, and generate a private <em>draft</em>.
+            </li>
+            <li>
+              Press <strong>Approve &amp; publish</strong>, then open <Link href="/creations" className="font-semibold text-brand underline">My creations</Link>{" "}
+              to <strong>Edit</strong> the text, change colours, or tell the AI &ldquo;Sold out of X, add Y for $5.&rdquo;
             </li>
           </ol>
         </div>

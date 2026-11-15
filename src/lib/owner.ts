@@ -1,5 +1,5 @@
 import "server-only";
-import { admin, getBusiness, isOwner, usingSupabase } from "./store";
+import { admin, getBusiness, isOrganizerEmail, isOwner, usingSupabase } from "./store";
 
 export interface OwnerSession {
   email: string;
@@ -42,4 +42,21 @@ export async function authorizeOwnerAccount(req: Request): Promise<OwnerSession 
     if (data.user?.email) return { email: data.user.email.toLowerCase(), demo: false };
   }
   return null;
+}
+
+/** A website organizer: signed in with a Supabase magic link AND listed in the organizers table. */
+export async function authorizeOrganizer(req: Request): Promise<{ email: string } | null> {
+  const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  if (!bearer || !usingSupabase) return null;
+  const { data } = await admin().auth.getUser(bearer);
+  const email = data.user?.email?.toLowerCase();
+  return email && (await isOrganizerEmail(email)) ? { email } : null;
+}
+
+/** The email behind a valid Supabase sign-in, whether or not it is an organizer. */
+export async function signedInEmail(req: Request): Promise<string | null> {
+  const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  if (!bearer || !usingSupabase) return null;
+  const { data } = await admin().auth.getUser(bearer);
+  return data.user?.email?.toLowerCase() ?? null;
 }

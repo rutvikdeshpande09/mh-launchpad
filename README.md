@@ -16,21 +16,17 @@ Owners keep control afterward: they can say *"Sold out of chicken tamales this w
 
 ---
 
-## ⚡ Try it in 2 minutes (for judges)
+## ⚡ Try it in 3 minutes (for judges)
 
-**Business owners choose their own ambassador. Try both sides:**
-- *As a student:* go to **Ambassadors → Judge demo access**, then save a public profile (languages and a short bio).
-- *As an owner:* open **For businesses → Demo owner access**, enter a business name, pick that ambassador, and send the request.
-- *Back as the student:* accept the request and press **Start the interview**. The owner's account is linked automatically, and a private draft site is created for them to approve.
+Everything below works with **no sign-up**, using the judge demo shortcuts.
 
-Or explore the finished result first:
+1. **Look at real results.** Open any site under *Explore* on the homepage. Try the language toggle, tilt the 3D cards, and flip the business card.
+2. **Be the student.** Go to **Ambassadors → Judge demo access**, then save a public profile (languages and a short bio).
+3. **Be the business owner.** In a private window open **For businesses → Demo owner access**, enter a business name, pick your ambassador, and send the request.
+4. **Run the interview.** Back as the ambassador, **accept** the request and press **Start the interview**. Type short answers (or record your voice), optionally add a *custom request* ("make it playful"), and generate. You get a private **draft** and a service certificate.
+5. **Approve and polish.** Press **Approve & publish**, then open **My creations** to **Edit** the text, change the colour scheme, or tell the AI *"Sold out of X, add Y for $5."*
 
-1. Open the live app and click the **demo business** (Tamales La Abuela, in English + Spanish). Try the language toggle, tilt the cards, and flip the business card.
-2. Go to **Ambassador → "Judge demo access"** (skips the school-email check).
-3. Open **Start interview**, choose a language, type short answers (or record your voice), tick the consent box, and press **Generate**. In about 30 seconds you get a private **draft** website and a service certificate; press **Approve & publish** to make it public.
-4. Open `/manage/tamales-la-abuela` → **Demo owner access**. Upload a profile photo (watch the card update) and try the AI updater: *"Sold out of chicken tamales this weekend, add Atole for $5."*
-
-The seeded business is a **fictional demo**, so the app works on first boot with no setup.
+Prefer to verify from the terminal? `npm run smoke -- https://mh-launchpad.vercel.app` runs 19 read-only checks, and adding `--ai` runs the whole flow above.
 
 ## 🧭 Routes
 
@@ -38,6 +34,7 @@ The seeded business is a **fictional demo**, so the app works on first boot with
 |---|---|
 | `/` | Landing page and directory of businesses |
 | `/ambassador` | Student sign-up (`@lammersvilleusd.net`) with a passcode and a 60-second AI-graded skill check. Then a public profile (languages, bio), the inbox of interview requests, and sign-in on any device. Judge demo toggle included |
+| `/organizer` | **Website organizer** (email sign-in, allow-listed): reorder the homepage, see every unpublished site, publish, hide or delete |
 | `/creations` | **My creations**: every site you interviewed for (ambassador) or own (owner), with Preview, Edit and Manage |
 | `/edit/[slug]` | Manual editor for every text field in both languages (items, highlights, hours, notices). Works for the owner, or for whoever holds the private draft link while the site is still a draft |
 | `/owner` | Business-owner sign-up/sign-in by email link: enter your business name, pick the ambassador who will interview you, and track your requests |
@@ -77,6 +74,7 @@ npm run dev                    # http://localhost:3000
 2. SQL Editor → paste and run [`supabase/schema.sql`](supabase/schema.sql). It creates the tables, row-level-security policies and the `business-assets` storage bucket.
 3. Authentication → URL Configuration → add your site URL (and `http://localhost:3000`) to the allowed redirect URLs.
 4. Copy the project URL, anon key and service-role key into `.env.local`.
+5. Add yourself as a website organizer: `insert into public.organizers (email) values ('you@example.com');`
 
 ### Deploy to Vercel
 
@@ -87,6 +85,32 @@ vercel --prod     # production
 ```
 
 Add the same environment variables in the Vercel dashboard (Project → Settings → Environment Variables).
+
+## 🏗 How it works
+
+```mermaid
+flowchart LR
+  O[Business owner] -- picks an ambassador --> R[(interview_requests)]
+  R --> A[Student ambassador]
+  A -- voice or text interview --> G[Gemini: structured JSON]
+  G -- validated by zod, privacy-filtered --> D[(Draft site)]
+  D -- owner reviews and approves --> P[Public site]
+  P --> H[Homepage, ordered by organizers]
+```
+
+- **AI with guardrails.** Gemini returns JSON that must match a strict schema (checked again with zod), then colours and lengths are clamped. Interview text is treated as data, never as instructions. Model fallbacks keep it responsive when one model is overloaded.
+- **Private by default.** New sites are drafts reachable only through a signed link. Owners can hide a site at any time. Row-level security keeps owner emails and requests server-only.
+- **Roles.** Student ambassadors (school email + passcode), business owners (email link), and website organizers (allow-listed emails) each see only what they should.
+
+## ✅ Testing
+
+```bash
+npm run dev                      # in one terminal
+npm run smoke                    # in another: pages, access rules, directory privacy
+npm run smoke -- http://localhost:3000 --ai   # also runs the full AI flow
+```
+
+The smoke test checks that every private endpoint refuses anonymous callers, forged tokens are rejected, the ambassador directory never leaks emails, drafts stay private until approved, and manual edits can't publish phone numbers or emails.
 
 ## 🧱 Tech stack (all free tiers)
 

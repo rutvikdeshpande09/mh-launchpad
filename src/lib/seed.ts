@@ -8,6 +8,7 @@ export const SEED_BUSINESSES: Business[] = [
     slug: "tamales-la-abuela",
     isDemo: true,
     published: true,
+    sortOrder: null,
     ambassadorName: "Demo Ambassador",
     createdAt: "2026-11-13T00:00:00.000Z",
     avatarUrl: null,

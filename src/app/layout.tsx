@@ -37,6 +37,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <p>
             MH Launchpad is an independent project by Mountain House High School students.
           </p>
+          <p className="mt-2">
+            <Link href="/organizer" className="underline opacity-70 hover:opacity-100">Organizer sign-in</Link>
+          </p>
         </footer>
       </body>
     </html>

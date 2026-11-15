@@ -38,11 +38,13 @@ create table if not exists public.businesses (
   ambassador_name text not null default '',
   is_demo         boolean not null default false,
   published       boolean not null default true,   -- false = private draft / hidden by owner
+  sort_order      integer,                         -- homepage position chosen by an organizer (1 = first); null = after those
   created_at      timestamptz not null default now()
 );
 
 -- Migration for databases created before drafts existed (safe to run more than once):
 alter table public.businesses add column if not exists published boolean not null default true;
+alter table public.businesses add column if not exists sort_order integer;
 
 -- Owner emails live in their own table so they are never exposed with the public site.
 create table if not exists public.business_owners (
@@ -74,6 +76,14 @@ create table if not exists public.inquiries (
   created_at  timestamptz not null default now()
 );
 create index if not exists inquiries_business_idx on public.inquiries (business_id, created_at desc);
+
+-- ---------------------------------------------------------------- organizers
+-- Emails allowed to use /organizer (reorder the homepage, see unpublished sites). Server-only table.
+create table if not exists public.organizers (
+  email text primary key
+);
+alter table public.organizers enable row level security;
+-- Add yourself:  insert into public.organizers (email) values ('you@example.com') on conflict do nothing;
 
 -- ---------------------------------------------------------- interview_requests
 -- A business owner asks one specific ambassador to interview them.

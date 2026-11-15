@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { authorizeOwner } from "@/lib/owner";
+import { authorizeOrganizer, authorizeOwner } from "@/lib/owner";
 import { verifyDraftToken } from "@/lib/preview";
 import { clientIp, rateLimit } from "@/lib/ratelimit";
 import { getBusiness, setPublished } from "@/lib/store";
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   if (!business) return Response.json({ error: "Business not found." }, { status: 404 });
 
   const byDraftLink = verifyDraftToken(req.headers.get("x-draft-token"), slug);
-  const byOwner = byDraftLink ? null : await authorizeOwner(req, slug);
+  const byOwner = byDraftLink ? null : (await authorizeOwner(req, slug)) ?? (await authorizeOrganizer(req));
   if (!byDraftLink && !byOwner) {
     return Response.json({ error: "Please sign in as the owner, or use the private draft link." }, { status: 401 });
   }

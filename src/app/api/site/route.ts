@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { authorizeOwner } from "@/lib/owner";
+import { authorizeOrganizer, authorizeOwner } from "@/lib/owner";
 import { verifyDraftToken } from "@/lib/preview";
 import { clientIp, rateLimit } from "@/lib/ratelimit";
 import { SiteContentSchema, normalizeContent, type BiText, type SiteContent } from "@/lib/schemas";
@@ -12,7 +12,7 @@ async function canEdit(req: Request, slug: string) {
   const business = await getBusiness(slug);
   if (!business) return { business: null, allowed: false };
   if (!business.published && verifyDraftToken(req.headers.get("x-draft-token"), slug)) return { business, allowed: true };
-  return { business, allowed: Boolean(await authorizeOwner(req, slug)) };
+  return { business, allowed: Boolean(await authorizeOwner(req, slug)) || Boolean(await authorizeOrganizer(req)) };
 }
 
 // GET /api/site?slug=...  -> the full editable content
