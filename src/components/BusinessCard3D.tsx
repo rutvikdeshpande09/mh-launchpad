@@ -5,6 +5,7 @@ import { toPng } from "html-to-image";
 import { Download, RotateCw, Share2 } from "lucide-react";
 import QRCode from "qrcode";
 import { forwardRef, useEffect, useRef, useState } from "react";
+import type { SiteContent } from "@/lib/schemas";
 import Tilt from "./Tilt";
 
 export interface CardData {
@@ -18,6 +19,37 @@ export interface CardData {
   items: string[];
   hours: string;
   slug: string;
+  /** Owner-uploaded logo; shown instead of the profile photo. */
+  logoUrl?: string | null;
+  style?: "gradient" | "light" | "dark";
+  /** Location line. null hides it. */
+  location?: string | null;
+  /** "own" shows the owner's uploaded card as the front. */
+  mode?: "generated" | "similar" | "own";
+  cardImageUrl?: string | null;
+}
+
+/** Build the card's data from a site. The owner's card colours (if the AI restyled their card) override the site colours. */
+export function buildCardData(c: SiteContent, o: { slug: string; avatarUrl: string | null; primary: string; accent: string }): CardData {
+  const b = c.brand;
+  const own = b?.cardMode === "similar";
+  return {
+    name: c.businessName,
+    tagline: c.cardTagline,
+    area: c.serviceArea,
+    emoji: c.theme.emoji,
+    primary: (own && b?.cardPrimary) || o.primary,
+    accent: (own && b?.cardAccent) || o.accent,
+    avatarUrl: o.avatarUrl,
+    logoUrl: b?.logoUrl ?? null,
+    style: own ? b?.cardStyle : "gradient",
+    location: b?.cardLocation,
+    mode: b?.cardMode,
+    cardImageUrl: b?.cardImageUrl ?? null,
+    items: c.services.map((x) => `${x.emoji} ${x.name.en}`),
+    hours: c.hours.en,
+    slug: o.slug,
+  };
 }
 
 const W = 380;
@@ -29,7 +61,10 @@ function Avatar({ data, size }: { data: CardData; size: number }) {
       className="grid shrink-0 place-items-center overflow-hidden rounded-full border-2 border-white/70 bg-white/20"
       style={{ width: size, height: size, fontSize: size * 0.5 }}
     >
-      {data.avatarUrl ? (
+      {data.logoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={data.logoUrl} alt="Business logo" className="size-full bg-white object-contain p-0.5" />
+      ) : data.avatarUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={data.avatarUrl} alt="" className="size-full object-cover" />
       ) : (
@@ -39,26 +74,43 @@ function Avatar({ data, size }: { data: CardData; size: number }) {
   );
 }
 
+function look(data: CardData) {
+  const style = data.style ?? "gradient";
+  if (style === "light") return { bg: "#ffffff", fg: "#1f2430", sub: "#5b6270", border: `3px solid ${data.primary}`, ring: `${data.primary}1f`, ring2: `${data.accent}1f`, avatarBorder: data.primary };
+  if (style === "dark") return { bg: `linear-gradient(135deg, #0f172a, #1e293b)`, fg: "#ffffff", sub: "#cbd5e1", border: `3px solid ${data.accent}`, ring: `${data.primary}55`, ring2: `${data.accent}33`, avatarBorder: data.accent };
+  return { bg: `linear-gradient(135deg, ${data.primary}, ${data.accent})`, fg: "#ffffff", sub: "rgba(255,255,255,.88)", border: "none", ring: "rgba(255,255,255,.1)", ring2: "rgba(0,0,0,.1)", avatarBorder: "rgba(255,255,255,.7)" };
+}
+
 /** Flat (non-3D) faces. Also used off-screen for crisp PNG export. */
 const Front = forwardRef<HTMLDivElement, { data: CardData; qr: string }>(function Front({ data, qr }, ref) {
+  if (data.mode === "own" && data.cardImageUrl) {
+    return (
+      <div ref={ref} className="relative overflow-hidden rounded-2xl bg-white" style={{ width: W, height: H, border: "1px solid #e5e7eb" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={data.cardImageUrl} alt={`${data.name} business card`} className="size-full object-contain" />
+      </div>
+    );
+  }
+  const l = look(data);
+  const location = data.location === undefined ? data.area : data.location;
   return (
     <div
       ref={ref}
-      className="relative flex flex-col justify-between overflow-hidden rounded-2xl p-5 text-white"
-      style={{ width: W, height: H, background: `linear-gradient(135deg, ${data.primary}, ${data.accent})` }}
+      className="relative flex flex-col justify-between overflow-hidden rounded-2xl p-5"
+      style={{ width: W, height: H, background: l.bg, color: l.fg, border: l.border }}
     >
-      <div className="absolute -right-10 -top-10 size-40 rounded-full bg-white/10" />
-      <div className="absolute -bottom-14 left-10 size-36 rounded-full bg-black/10" />
+      <div className="absolute -right-10 -top-10 size-40 rounded-full" style={{ background: l.ring }} />
+      <div className="absolute -bottom-14 left-10 size-36 rounded-full" style={{ background: l.ring2 }} />
       <div className="relative flex items-center gap-3">
         <Avatar data={data} size={64} />
         <div className="min-w-0">
           <p className="truncate text-xl font-extrabold leading-tight">{data.name}</p>
-          <p className="text-sm text-white/85">{data.tagline}</p>
+          <p className="text-sm" style={{ color: l.sub }}>{data.tagline}</p>
         </div>
       </div>
       <div className="relative flex items-end justify-between gap-3">
-        <div className="text-xs text-white/90">
-          <p className="font-semibold">📍 {data.area}</p>
+        <div className="text-xs" style={{ color: l.sub }}>
+          {location ? <p className="font-semibold">📍 {location}</p> : null}
           <p>Scan to see the full site →</p>
         </div>
         {qr && (
@@ -70,7 +122,7 @@ const Front = forwardRef<HTMLDivElement, { data: CardData; qr: string }>(functio
   );
 });
 
-const Back = forwardRef<HTMLDivElement, { data: CardData }>(function Back({ data }, ref) {
+const Back = forwardRef<HTMLDivElement, { data: CardData; qr: string }>(function Back({ data, qr }, ref) {
   return (
     <div
       ref={ref}
@@ -89,11 +141,17 @@ const Back = forwardRef<HTMLDivElement, { data: CardData }>(function Back({ data
           ))}
         </ul>
       </div>
-      <div className="text-xs" style={{ color: "#5b6270" }}>
-        <p>🕒 {data.hours}</p>
-        <p className="mt-1 font-semibold" style={{ color: data.accent }}>
-          Message us through our MH Launchpad page
-        </p>
+      <div className="flex items-end justify-between gap-3">
+        <div className="text-xs" style={{ color: "#5b6270" }}>
+          <p>🕒 {data.hours}</p>
+          <p className="mt-1 font-semibold" style={{ color: data.accent }}>
+            Message us through our MH Launchpad page
+          </p>
+        </div>
+        {data.mode === "own" && qr && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={qr} alt="QR code linking to this business's website" className="size-[64px] shrink-0 rounded-lg border border-[#e5e7eb] bg-white p-1" />
+        )}
       </div>
     </div>
   );
@@ -159,7 +217,7 @@ export default function BusinessCard3D({ data }: { data: CardData }) {
             <Front data={data} qr={qr} />
           </div>
           <div className="backface-hidden absolute inset-0" style={{ transform: "rotateY(180deg)" }}>
-            <Back data={data} />
+            <Back data={data} qr={qr} />
           </div>
         </motion.button>
       </Tilt>
@@ -182,7 +240,7 @@ export default function BusinessCard3D({ data }: { data: CardData }) {
       {/* Off-screen flat copies used only for PNG export (3D transforms break image capture). */}
       <div aria-hidden className="pointer-events-none fixed -left-[9999px] top-0">
         <Front ref={exportFront} data={data} qr={qr} />
-        <Back ref={exportBack} data={data} />
+        <Back ref={exportBack} data={data} qr={qr} />
       </div>
     </div>
   );

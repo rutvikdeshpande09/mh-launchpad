@@ -488,7 +488,7 @@ export function parseImageDataUrl(dataUrl: string): { mime: string; bytes: Buffe
  * Store an image and return a URL for it. Uses Supabase Storage when configured,
  * otherwise keeps the (already-resized) data URL so the app works with zero setup.
  */
-export async function uploadImage(dataUrl: string, folder: "photos" | "avatars"): Promise<string | null> {
+export async function uploadImage(dataUrl: string, folder: "photos" | "avatars" | "logos" | "cards"): Promise<string | null> {
   const img = parseImageDataUrl(dataUrl);
   if (!img) return null;
   if (!usingSupabase) return dataUrl;

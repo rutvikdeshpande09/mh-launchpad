@@ -8,7 +8,7 @@ import type { BiText, Business } from "@/lib/schemas";
 import { RTL_LANGUAGES } from "@/lib/languages";
 import { EN, getStrings } from "@/lib/ui-strings";
 import { postJson } from "@/lib/client";
-import BusinessCard3D from "./BusinessCard3D";
+import BusinessCard3D, { buildCardData } from "./BusinessCard3D";
 import Tilt from "./Tilt";
 
 type Lang = "en" | "alt";
@@ -64,6 +64,10 @@ export default function SiteView({ business, preview = false }: { business: Busi
                 </button>
               )}
             </div>
+            {c.brand?.logoUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={c.brand.logoUrl} alt={`${c.businessName} logo`} className="mb-5 h-16 w-auto max-w-[12rem] rounded-xl bg-white/95 object-contain p-2 shadow-lg" />
+            )}
             <motion.h1
               initial={reduce ? false : { opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
@@ -202,20 +206,7 @@ export default function SiteView({ business, preview = false }: { business: Busi
         <h2 className="mb-8 text-center text-3xl font-extrabold" style={{ color: accent }}>
           {s.card}
         </h2>
-        <BusinessCard3D
-          data={{
-            name: c.businessName,
-            tagline: c.cardTagline,
-            area: c.serviceArea,
-            emoji: c.theme.emoji,
-            primary,
-            accent,
-            avatarUrl: business.avatarUrl,
-            items: c.services.map((x) => `${x.emoji} ${x.name.en}`),
-            hours: c.hours.en,
-            slug: business.slug,
-          }}
-        />
+        <BusinessCard3D data={buildCardData(c, { slug: business.slug, avatarUrl: business.avatarUrl, primary: primary, accent: accent })} />
       </section>
 
       {/* ---------- masked inquiry form ---------- */}

@@ -51,4 +51,10 @@ export const PRESETS: Palette[] = [
   { name: "Royal", primary: "#4338ca", accent: "#be185d" },
   { name: "Slate", primary: "#334155", accent: "#b45309" },
   { name: "Teal", primary: "#0f766e", accent: "#1d4ed8" },
+  { name: "Coffee", primary: "#78350f", accent: "#b45309" },
+  { name: "Plum", primary: "#7e22ce", accent: "#be123c" },
+  { name: "Emerald", primary: "#047857", accent: "#0369a1" },
+  { name: "Midnight", primary: "#1e293b", accent: "#6d28d9" },
+  { name: "Rose", primary: "#be123c", accent: "#9a3412" },
+  { name: "Sage", primary: "#4d7c0f", accent: "#0f766e" },
 ];

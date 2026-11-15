@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { LANGUAGES, getLanguage } from "@/lib/languages";
 import { postJson } from "@/lib/client";
+import { fmtWait, requestMagicLink, useLinkCooldown } from "@/lib/magiclink";
 import type { InterviewRequest, PublicAmbassador } from "@/lib/schemas";
 
 const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -27,6 +28,7 @@ export default function OwnerClient() {
   const [checking, setChecking] = useState(hasSupabase);
   const [email, setEmail] = useState("");
   const [linkSent, setLinkSent] = useState(false);
+  const cooldown = useLinkCooldown();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
@@ -84,13 +86,14 @@ export default function OwnerClient() {
   }, [auth, headers]);
 
   async function sendLink() {
-    if (!supabase) return;
+    if (!supabase || cooldown.left > 0) return;
     setBusy(true);
     setMessage(null);
-    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: `${window.location.origin}/owner` } });
+    const r = await requestMagicLink(supabase, email, `${window.location.origin}/owner`);
     setBusy(false);
-    if (error) setMessage({ kind: "err", text: error.message });
-    else setLinkSent(true);
+    if (r.cooldown) cooldown.start(r.cooldown);
+    if (r.ok) setLinkSent(true);
+    else setMessage({ kind: "err", text: r.error });
   }
 
   async function submitRequest() {
@@ -148,8 +151,8 @@ export default function OwnerClient() {
                       Your email
                       <input type="email" required className="field mt-1" value={email} onChange={(e) => setEmail(e.target.value)} />
                     </label>
-                    <button type="submit" className="btn btn-primary w-full" disabled={busy}>
-                      {busy && <Loader2 className="animate-spin" size={16} />} Email me a sign-in link
+                    <button type="submit" className="btn btn-primary w-full" disabled={busy || cooldown.left > 0}>
+                      {busy && <Loader2 className="animate-spin" size={16} />} {cooldown.left > 0 ? `Please wait ${fmtWait(cooldown.left)}` : "Email me a sign-in link"}
                     </button>
                     <p className="text-xs text-muted">No password needed. Your email is never shown publicly.</p>
                   </form>

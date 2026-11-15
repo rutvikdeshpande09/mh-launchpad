@@ -4,6 +4,7 @@ import { ArrowDown, ArrowUp, Eye, EyeOff, Loader2, LogOut, Pencil, Trash2 } from
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { postJson } from "@/lib/client";
+import { fmtWait, requestMagicLink, useLinkCooldown } from "@/lib/magiclink";
 import { hasSupabase, useOwnerSession } from "@/lib/useOwnerSession";
 
 interface Site {
@@ -37,6 +38,7 @@ export default function OrganizerClient() {
   const [dirty, setDirty] = useState(false);
   const [email, setEmail] = useState("");
   const [linkSent, setLinkSent] = useState(false);
+  const cooldown = useLinkCooldown();
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState("");
   const [message, setMessage] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
@@ -84,13 +86,14 @@ export default function OrganizerClient() {
   }, [token]);
 
   async function sendLink() {
-    if (!supabase) return;
+    if (!supabase || cooldown.left > 0) return;
     setBusy(true);
     setMessage(null);
-    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: `${window.location.origin}/organizer` } });
+    const r = await requestMagicLink(supabase, email, `${window.location.origin}/organizer`);
     setBusy(false);
-    if (error) setMessage({ kind: "err", text: error.message });
-    else setLinkSent(true);
+    if (r.cooldown) cooldown.start(r.cooldown);
+    if (r.ok) setLinkSent(true);
+    else setMessage({ kind: "err", text: r.error });
   }
 
   async function act(fn: () => Promise<unknown>, ok: string) {
@@ -141,8 +144,8 @@ export default function OrganizerClient() {
                 Organizer email
                 <input type="email" required className="field mt-1" value={email} onChange={(e) => setEmail(e.target.value)} />
               </label>
-              <button type="submit" className="btn btn-primary w-full" disabled={busy}>
-                {busy && <Loader2 className="animate-spin" size={16} />} Email me a sign-in link
+              <button type="submit" className="btn btn-primary w-full" disabled={busy || cooldown.left > 0}>
+                {busy && <Loader2 className="animate-spin" size={16} />} {cooldown.left > 0 ? `Please wait ${fmtWait(cooldown.left)}` : "Email me a sign-in link"}
               </button>
               <p className="text-xs text-muted">Only emails added to the organizers list can use this page.</p>
             </form>

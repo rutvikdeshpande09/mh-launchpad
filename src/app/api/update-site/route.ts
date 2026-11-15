@@ -68,7 +68,7 @@ ${SAFETY_RULES}`,
       });
     }
 
-    const content = normalizeContent(result.content);
+    const content = normalizeContent({ ...result.content, brand: business.content.brand }); // the AI never touches logo/card settings
     await updateContent(slug, content);
     return Response.json({ content, changeSummary: result.changeSummary.slice(0, 240) });
   } catch (e) {

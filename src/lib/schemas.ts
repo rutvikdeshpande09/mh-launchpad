@@ -35,7 +35,25 @@ export const SiteContentSchema = z.object({
   theme: ThemeSchema,
   cardTagline: z.string().describe("Max 8 words, shown on the digital business card"),
 });
-export type SiteContent = z.infer<typeof SiteContentSchema>;
+
+/**
+ * Owner-chosen branding. Stored inside the site content JSON (so no database change is needed)
+ * and deliberately NOT part of SiteContentSchema, so the AI never generates or overwrites it.
+ */
+export interface Brand {
+  /** Owner-uploaded logo. */
+  logoUrl?: string;
+  /** Photo of the owner's own printed business card. */
+  cardImageUrl?: string;
+  /** generated = built from the site, similar = AI-restyled from the owner's card, own = show the owner's card as is. */
+  cardMode?: "generated" | "similar" | "own";
+  cardStyle?: "gradient" | "light" | "dark";
+  cardPrimary?: string;
+  cardAccent?: string;
+  /** Location line on the card. "" hides it; undefined uses the site's service area. */
+  cardLocation?: string;
+}
+export type SiteContent = z.infer<typeof SiteContentSchema> & { brand?: Brand };
 
 export interface AltLang {
   code: string;
@@ -146,7 +164,36 @@ export function normalizeContent(c: SiteContent): SiteContent {
       emoji: cap(c.theme.emoji, 8) || "✨",
     },
     cardTagline: cap(c.cardTagline, 70),
+    brand: normalizeBrand(c.brand),
   };
+}
+
+// https URLs (Supabase Storage) in production; small data URLs only in local no-database mode.
+const safeUrl = (u: unknown) =>
+  typeof u === "string" && ((u.length <= 500 && u.startsWith("https://")) || (u.length <= 1_000_000 && /^data:image\/(jpeg|png|webp);base64,/.test(u))) ? u : undefined;
+
+export function normalizeBrand(b: Brand | undefined): Brand | undefined {
+  if (!b || typeof b !== "object") return undefined;
+  const out: Brand = {};
+  const logo = safeUrl(b.logoUrl);
+  const card = safeUrl(b.cardImageUrl);
+  if (logo) out.logoUrl = logo;
+  if (card) out.cardImageUrl = card;
+  if (b.cardMode === "generated" || b.cardMode === "similar" || b.cardMode === "own") out.cardMode = b.cardMode;
+  if (b.cardStyle === "gradient" || b.cardStyle === "light" || b.cardStyle === "dark") out.cardStyle = b.cardStyle;
+  if (typeof b.cardPrimary === "string" && HEX.test(b.cardPrimary)) out.cardPrimary = ensureReadable(b.cardPrimary);
+  if (typeof b.cardAccent === "string" && HEX.test(b.cardAccent)) out.cardAccent = ensureReadable(b.cardAccent, "#0f766e");
+  if (typeof b.cardLocation === "string") out.cardLocation = b.cardLocation.slice(0, 60);
+  if (out.cardMode === "own" && !out.cardImageUrl) out.cardMode = "generated";
+  return Object.keys(out).length ? out : undefined;
+}
+
+const EMAIL_RE = /[^\s@]+@[^\s@]+\.[a-z]{2,}/i;
+const PHONE_RE = /(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/;
+const STREET_RE = /\b\d{1,6}\s+[\w .'-]{2,30}\b(st|street|ave|avenue|rd|road|dr|drive|ln|lane|blvd|boulevard|ct|court|way|pl|place|cir|circle)\b/i;
+/** Public card location must be a city or area, never a street address, phone number or email. */
+export function isSafeLocation(s: string): boolean {
+  return !EMAIL_RE.test(s) && !PHONE_RE.test(s) && !STREET_RE.test(s);
 }
 
 export function slugify(name: string): string {

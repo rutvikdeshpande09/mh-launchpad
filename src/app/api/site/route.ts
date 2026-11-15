@@ -66,7 +66,7 @@ export async function POST(req: Request) {
     return bad("Please remove email addresses and phone numbers. Customers can reach you privately through the message form on your site.");
   }
 
-  let next: SiteContent = { ...content, theme: business.content.theme }; // colours are changed in the portal
+  let next: SiteContent = { ...content, theme: business.content.theme, brand: business.content.brand }; // colours, logo and card are changed in the portal
   if (business.altLang.code === "en") next = mirrorEnglish(next);
   next = normalizeContent(next);
   await updateContent(slug, next);

@@ -7,9 +7,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Cropper, { type Area } from "react-easy-crop";
 import type { Business, Inquiry } from "@/lib/schemas";
 import { postJson, type AudioClip } from "@/lib/client";
+import { fmtWait, requestMagicLink, useLinkCooldown } from "@/lib/magiclink";
 import { PRESETS, ensureReadable } from "@/lib/color";
 import AudioRecorder from "./AudioRecorder";
-import BusinessCard3D from "./BusinessCard3D";
+import BusinessCard3D, { buildCardData } from "./BusinessCard3D";
 
 const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPA_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -37,12 +38,45 @@ async function cropToDataUrl(src: string, area: Area): Promise<string> {
   return canvas.toDataURL("image/jpeg", 0.88);
 }
 
+/** Shrink a chosen image so it uploads fast and stays under the server's 700 KB limit. PNG logos keep transparency. */
+async function fileToDataUrl(file: File, maxSide: number): Promise<string> {
+  const src = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = () => reject(new Error("We couldn't read that image. Please try a JPG or PNG."));
+      i.src = src;
+    });
+    const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(img.width * scale));
+    canvas.height = Math.max(1, Math.round(img.height * scale));
+    canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+    if (file.type === "image/png") {
+      const png = canvas.toDataURL("image/png");
+      if (png.length < 900_000) return png;
+    }
+    for (const q of [0.88, 0.75, 0.6, 0.45]) {
+      const jpg = canvas.toDataURL("image/jpeg", q);
+      if (jpg.length < 900_000) return jpg;
+    }
+    throw new Error("That image is too large. Please choose a smaller one.");
+  } finally {
+    URL.revokeObjectURL(src);
+  }
+}
+
+const CARD_EXAMPLES = ["Make it darker and more elegant", "Keep my colours but make it friendlier", "Bolder, with a playful feel"];
+const COLOR_EXAMPLES = ["Warm and cozy, like autumn", "Fresh and green, like a garden", "Elegant purple and gold"];
+
 export default function ManageClient({ initial }: { initial: Business }) {
   const [business, setBusiness] = useState(initial);
   const [auth, setAuth] = useState<Auth | null>(null);
   const [checking, setChecking] = useState(hasSupabase);
   const [email, setEmail] = useState("");
   const [linkSent, setLinkSent] = useState(false);
+  const cooldown = useLinkCooldown();
   const [instruction, setInstruction] = useState("");
   const [audio, setAudio] = useState<AudioClip | null>(null);
   const [busy, setBusy] = useState(false);
@@ -50,6 +84,13 @@ export default function ManageClient({ initial }: { initial: Business }) {
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [draftToken, setDraftToken] = useState("");
   const [colors, setColors] = useState({ primary: initial.content.theme.primary, accent: initial.content.theme.accent });
+
+  // logo, business card and AI colour helper
+  const [ackCard, setAckCard] = useState(false);
+  const [cardPref, setCardPref] = useState("");
+  const [location, setLocation] = useState<string | null>(null);
+  const [colorRequest, setColorRequest] = useState("");
+  const [colorNote, setColorNote] = useState("");
 
   // photo cropping
   const [cropSrc, setCropSrc] = useState<string | null>(null);
@@ -105,16 +146,14 @@ export default function ManageClient({ initial }: { initial: Business }) {
   }, [auth, business.slug, headers]);
 
   async function sendLink() {
-    if (!supabase) return;
+    if (!supabase || cooldown.left > 0) return;
     setBusy(true);
     setMessage(null);
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${window.location.origin}/manage/${business.slug}` },
-    });
+    const r = await requestMagicLink(supabase, email, `${window.location.origin}/manage/${business.slug}`);
     setBusy(false);
-    if (error) setMessage({ kind: "err", text: error.message });
-    else setLinkSent(true);
+    if (r.cooldown) cooldown.start(r.cooldown);
+    if (r.ok) setLinkSent(true);
+    else setMessage({ kind: "err", text: r.error });
   }
 
   async function applyUpdate() {
@@ -211,7 +250,55 @@ export default function ManageClient({ initial }: { initial: Business }) {
     }
   }
 
+  async function brandCall(body: Record<string, unknown>, okText?: string) {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const res = await postJson<{ content: Business["content"]; note?: string }>("/api/manage", { slug: business.slug, ...body }, headers());
+      setBusiness((b) => ({ ...b, content: res.content }));
+      setMessage({ kind: "ok", text: res.note ? `✅ ${res.note}` : okText ?? "✅ Saved." });
+      return true;
+    } catch (e) {
+      setMessage({ kind: "err", text: e instanceof Error ? e.message : "Something went wrong. Please try again." });
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function pickImage(file: File | undefined, action: "logo" | "card-upload") {
+    if (!file) return;
+    try {
+      const dataUrl = await fileToDataUrl(file, action === "logo" ? 600 : 1100);
+      await brandCall({ action, dataUrl }, action === "logo" ? "✅ Logo saved. It now shows on your site and card." : "✅ Card uploaded. Your own card is now shown as the front.");
+    } catch (e) {
+      setMessage({ kind: "err", text: e instanceof Error ? e.message : "Upload failed." });
+    }
+  }
+
+  async function suggestColors() {
+    setBusy(true);
+    setMessage(null);
+    setColorNote("");
+    try {
+      const r = await postJson<{ name: string; primary: string; accent: string; explanation: string }>(
+        "/api/manage",
+        { slug: business.slug, action: "suggest-colors", request: colorRequest.trim() },
+        headers(),
+      );
+      setColors({ primary: r.primary, accent: r.accent });
+      setColorNote(`${r.name}: ${r.explanation} Preview it below, then press “Save colours”.`);
+    } catch (e) {
+      setMessage({ kind: "err", text: e instanceof Error ? e.message : "The AI couldn't suggest colours." });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const c = business.content;
+  const brand = c.brand ?? {};
+  const cardMode = brand.cardMode ?? "generated";
+  const locationText = location ?? brand.cardLocation ?? c.serviceArea;
   // What you see is what gets saved: colours too light for white text are darkened automatically.
   const safe = { primary: ensureReadable(colors.primary), accent: ensureReadable(colors.accent, "#0f766e") };
   const colorsChanged = safe.primary !== c.theme.primary || safe.accent !== c.theme.accent;
@@ -246,8 +333,8 @@ export default function ManageClient({ initial }: { initial: Business }) {
                       Owner email
                       <input type="email" required className="field mt-1" value={email} onChange={(e) => setEmail(e.target.value)} />
                     </label>
-                    <button type="submit" className="btn btn-primary w-full" disabled={busy}>
-                      {busy && <Loader2 className="animate-spin" size={16} />} Email me a sign-in link
+                    <button type="submit" className="btn btn-primary w-full" disabled={busy || cooldown.left > 0}>
+                      {busy && <Loader2 className="animate-spin" size={16} />} {cooldown.left > 0 ? `Please wait ${fmtWait(cooldown.left)}` : "Email me a sign-in link"}
                     </button>
                   </form>
                 )
@@ -318,20 +405,7 @@ export default function ManageClient({ initial }: { initial: Business }) {
         <section className="card p-6">
           <h2 className="text-lg font-bold">Your digital business card</h2>
           <div className="mt-5 overflow-x-auto pb-2">
-            <BusinessCard3D
-              data={{
-                name: c.businessName,
-                tagline: c.cardTagline,
-                area: c.serviceArea,
-                emoji: c.theme.emoji,
-                primary: safe.primary,
-                accent: safe.accent,
-                avatarUrl: business.avatarUrl,
-                items: c.services.map((x) => `${x.emoji} ${x.name.en}`),
-                hours: c.hours.en,
-                slug: business.slug,
-              }}
-            />
+            <BusinessCard3D data={buildCardData(c, { slug: business.slug, avatarUrl: business.avatarUrl, primary: safe.primary, accent: safe.accent })} />
           </div>
           <label className="btn btn-primary mt-4 w-full cursor-pointer">
             <Camera size={16} /> Upload profile photo
@@ -395,6 +469,142 @@ export default function ManageClient({ initial }: { initial: Business }) {
         </section>
       </div>
 
+      {/* logo and business card */}
+      <section className="card mt-8 p-6">
+        <h2 className="text-lg font-bold">Your logo and business card</h2>
+        <p className="mt-1 text-sm text-muted">
+          Add your own logo, and choose how your digital card looks: built from your site, made to look like your own card, or your own card exactly as it is.
+        </p>
+
+        <div className="mt-5 grid gap-6 lg:grid-cols-2">
+          <div>
+            <h3 className="font-semibold">Logo</h3>
+            <div className="mt-2 flex items-center gap-4">
+              <div className="grid size-20 shrink-0 place-items-center overflow-hidden rounded-xl border border-line bg-white">
+                {brand.logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={brand.logoUrl} alt="Your logo" className="size-full object-contain p-1" />
+                ) : (
+                  <span className="text-xs text-muted">No logo yet</span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <label className="btn btn-primary cursor-pointer !py-2 text-sm">
+                  {brand.logoUrl ? "Replace logo" : "Upload logo"}
+                  <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" disabled={busy} onChange={(e) => { pickImage(e.target.files?.[0], "logo"); e.target.value = ""; }} />
+                </label>
+                {brand.logoUrl && (
+                  <button type="button" className="btn btn-ghost !py-2 text-sm" disabled={busy} onClick={() => brandCall({ action: "remove-logo" }, "✅ Logo removed.")}>
+                    Remove
+                  </button>
+                )}
+              </div>
+            </div>
+            <p className="mt-2 text-xs text-muted">Shown at the top of your site and on your card. PNG, JPG or WebP.</p>
+          </div>
+
+          <div>
+            <h3 className="font-semibold">Location shown on the card</h3>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <input
+                className="field min-w-0 flex-1"
+                maxLength={60}
+                value={locationText}
+                onChange={(e) => setLocation(e.target.value)}
+                aria-label="Location shown on the card"
+                placeholder="e.g. Mountain House, CA"
+              />
+              <button type="button" className="btn btn-primary !py-2 text-sm" disabled={busy} onClick={() => brandCall({ action: "card-settings", location: locationText }, "✅ Card location updated.")}>
+                Save
+              </button>
+              <button type="button" className="btn btn-ghost !py-2 text-sm" disabled={busy} onClick={() => { setLocation(""); brandCall({ action: "card-settings", location: "" }, "✅ Location hidden on your card."); }}>
+                Hide
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-muted">Use a city or area only. Street addresses, phone numbers and emails are not allowed.</p>
+          </div>
+        </div>
+
+        <div className="mt-6 border-t border-line pt-5">
+          <h3 className="font-semibold">Use my own business card</h3>
+          <p className="mt-1 text-sm text-muted">Upload a photo or scan of your current card. Then either keep it exactly as it is, or ask the AI to build a digital card in a similar style.</p>
+
+          <label className="mt-3 flex items-start gap-2 text-sm">
+            <input type="checkbox" className="mt-1" checked={ackCard} onChange={(e) => setAckCard(e.target.checked)} />
+            <span>
+              I understand my card photo is shown <strong>publicly</strong> on my page if I keep it as is, and it is read by Google Gemini (AI) if I ask for a similar card. It should not show a home address or a number I want private.
+            </span>
+          </label>
+
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <label className={`btn btn-primary cursor-pointer !py-2 text-sm ${!ackCard || busy ? "pointer-events-none opacity-50" : ""}`}>
+              {brand.cardImageUrl ? "Replace my card photo" : "Upload my card photo"}
+              <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" disabled={!ackCard || busy} onChange={(e) => { pickImage(e.target.files?.[0], "card-upload"); e.target.value = ""; }} />
+            </label>
+            {brand.cardImageUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={brand.cardImageUrl} alt="Your uploaded card" className="h-16 rounded-lg border border-line bg-white object-contain" />
+            )}
+          </div>
+
+          {brand.cardImageUrl && (
+            <>
+              <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Card version">
+                {([["generated", "Built from my site"], ["similar", "Similar to my card (AI)"], ["own", "My own card"]] as const).map(([m, label]) => (
+                  <button
+                    key={m}
+                    type="button"
+                    aria-pressed={cardMode === m}
+                    disabled={busy || (m === "similar" && !brand.cardPrimary)}
+                    title={m === "similar" && !brand.cardPrimary ? "Ask the AI below first" : undefined}
+                    onClick={() => brandCall({ action: "card-settings", mode: m }, "✅ Card updated.")}
+                    className={`rounded-full border-2 bg-white px-4 py-1.5 text-sm font-semibold disabled:opacity-50 ${cardMode === m ? "border-foreground" : "border-line"}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-4 rounded-xl bg-[#fffaf3] p-4">
+                <label className="block text-sm font-semibold" htmlFor="card-pref">
+                  <Sparkles size={14} className="mr-1 inline" /> Ask the AI to build a card like yours
+                </label>
+                <textarea
+                  id="card-pref"
+                  className="field mt-2 min-h-20"
+                  maxLength={400}
+                  value={cardPref}
+                  onChange={(e) => setCardPref(e.target.value)}
+                  placeholder="Tell the AI what you prefer (any language), e.g. “Keep the same colours but make it simpler”"
+                />
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {CARD_EXAMPLES.map((ex) => (
+                    <button key={ex} type="button" className="rounded-full border border-line bg-white px-3 py-1 text-xs" onClick={() => setCardPref(ex)}>
+                      {ex}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-primary mt-3 !py-2 text-sm"
+                  disabled={busy || !ackCard}
+                  onClick={() => brandCall({ action: "card-similar", preference: cardPref.trim() || undefined, location: locationText })}
+                >
+                  {busy && <Loader2 className="animate-spin" size={16} />} Build a similar card
+                </button>
+                {!ackCard && <p className="mt-2 text-xs text-muted">Tick the box above first.</p>}
+              </div>
+            </>
+          )}
+
+          {(brand.cardMode || brand.cardStyle) && (
+            <button type="button" className="btn btn-ghost mt-4 !py-2 text-sm" disabled={busy} onClick={() => brandCall({ action: "card-settings", reset: true }, "✅ Card reset to the one built from your site.")}>
+              Reset card to the default
+            </button>
+          )}
+        </div>
+      </section>
+
       {/* site colours */}
       <section className="card mt-8 p-6">
         <h2 className="text-lg font-bold">Site colours</h2>
@@ -418,6 +628,33 @@ export default function ManageClient({ initial }: { initial: Business }) {
               </button>
             );
           })}
+        </div>
+
+        <div className="mt-5 rounded-xl bg-[#fffaf3] p-4">
+          <label className="block text-sm font-semibold" htmlFor="color-ai">
+            <Sparkles size={14} className="mr-1 inline" /> Not quite right? Tell the AI what you want
+          </label>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <input
+              id="color-ai"
+              className="field min-w-0 flex-1"
+              maxLength={300}
+              value={colorRequest}
+              onChange={(e) => setColorRequest(e.target.value)}
+              placeholder="e.g. “Soft pink and gold, like a wedding”"
+            />
+            <button type="button" className="btn btn-primary !py-2 text-sm" disabled={busy || colorRequest.trim().length < 2} onClick={suggestColors}>
+              {busy && <Loader2 className="animate-spin" size={16} />} Suggest colours
+            </button>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {COLOR_EXAMPLES.map((ex) => (
+              <button key={ex} type="button" className="rounded-full border border-line bg-white px-3 py-1 text-xs" onClick={() => setColorRequest(ex)}>
+                {ex}
+              </button>
+            ))}
+          </div>
+          {colorNote && <p role="status" className="mt-2 text-sm text-green-800">{colorNote}</p>}
         </div>
 
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
