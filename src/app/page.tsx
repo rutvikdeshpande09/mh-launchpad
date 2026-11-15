@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { listBusinesses } from "@/lib/store";
 
@@ -17,6 +18,14 @@ export default async function Home() {
       <section className="relative isolate overflow-hidden px-4 pb-24 pt-16 text-center">
         <div className="floaty absolute -left-20 top-0 -z-10 size-72 rounded-full bg-cta/25" />
         <div className="floaty absolute -right-16 bottom-0 -z-10 size-80 rounded-[40%] bg-ink/5" />
+        <Image
+          src="/logo.png"
+          alt="MH Launchpad logo: a graduate in a cap reaching for a star"
+          width={800}
+          height={590}
+          priority
+          className="mx-auto mb-8 w-56 rounded-2xl border-2 border-ink shadow-[4px_4px_0_var(--ink)] sm:w-64"
+        />
         <p className="mx-auto w-fit rounded-full border-2 border-ink bg-surface px-4 py-1 text-sm font-bold text-ink">
           A Mountain House High School project
         </p>
