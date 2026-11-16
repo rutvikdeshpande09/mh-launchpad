@@ -12,21 +12,25 @@ publish:
 
 Owners keep control afterward: they can say *"Sold out of chicken tamales this weekend, add Atole for $5"* and the live site updates.
 
-> **Live app:** https://mh-launchpad.vercel.app · **Code:** https://github.com/rutvikdeshpande09/mh-launchpad · **Demo video:** _add your Google Drive link here_
+> **Live app:** https://mh-launchpad.vercel.app · **Code:** https://github.com/rutvikdeshpande09/mh-launchpad · **Demo video:** [watch on Google Drive](https://drive.google.com/file/d/1MsrvF6Z-jaybQPObexHZZkNWiXDTNrYk/view?usp=sharing)
 
 ---
 
 ## ⚡ Try it in 3 minutes (for judges)
 
-Everything below works with **no sign-up**, using the judge demo shortcuts.
+Want to watch first? Here is a short walkthrough of these steps: [Judge demo runthrough video](https://drive.google.com/file/d/1lhobFK7K3iJpgDvWZnHUWhWFLX6AS9ms/view?usp=sharing).
 
-1. **Look at real results.** Open any site under *Explore* on the homepage. Try the language toggle, tilt the 3D cards, and flip the business card.
-2. **Be the student.** Go to **Ambassadors → Judge demo access**, then save a public profile (languages and a short bio).
-3. **Be the business owner.** In a private window open **For businesses → Demo owner access**, enter a business name, pick your ambassador, and send the request.
-4. **Run the interview.** Back as the ambassador, **accept** the request and press **Start the interview**. Type short answers (or record your voice), optionally add a *custom request* ("make it playful"), and generate. You get a private **draft** and a service certificate.
-5. **Approve and polish.** Press **Approve & publish**, then open **My creations** to **Edit** the text, change the colour scheme, or tell the AI *"Sold out of X, add Y for $5."*
+You don't need an account. We added demo buttons so you can try both sides of the app.
 
-Prefer to verify from the terminal? `npm run smoke -- https://mh-launchpad.vercel.app` runs 19 read-only checks, and adding `--ai` runs the whole flow above.
+1. Open the site and click any business under **Explore**. Switch the language, move the 3D cards around, and flip the business card.
+2. Go to **Ambassadors** and click **Judge demo access**. This makes you a student ambassador. Save a short profile (your languages and a bio).
+3. Now be the business owner. Open the site in a private window, go to **For businesses**, and click **Demo owner access**. Type a business name, pick the ambassador you just made, and send the request.
+4. Go back to the ambassador window, accept the request, and click **Start the interview**. Type a few short answers (or record your voice). You can also add a custom request like "make it playful". When it finishes you get a private draft of the site and a service certificate.
+5. Click **Approve & publish**. Then open **My creations** to edit the text, change the colors, or tell the AI something like "sold out of X, add Y for $5".
+
+Owners also have a portal where they can add a logo, upload their own business card, and pick colors.
+
+If you'd rather check from a terminal, `npm run smoke -- https://mh-launchpad.vercel.app` runs 19 checks. Add `--ai` to run the whole flow above.
 
 ## 🧭 Routes
 
