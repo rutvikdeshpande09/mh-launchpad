@@ -12,10 +12,10 @@ export const QUOTES: Quote[] = [
   },
   {
     text: "The website was easy to navigate, the design was clean, professional and visually appealing, and everything felt very user friendly. This is a great tool to help local businesses promote themselves.",
-    who: "A person who tried the site",
+    who: "Shinjini C., a MHHS student",
   },
   {
     text: "The colors and the way they were out of the website looked very good. The way the website was explaining each detail was very clean and understanding.",
-    who: "A person who tried the site",
+    who: "Pranav V., a MHHS student",
   },
 ];

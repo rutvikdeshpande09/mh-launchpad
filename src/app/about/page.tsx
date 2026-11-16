@@ -138,9 +138,9 @@ export default async function AboutPage() {
       {/* team */}
       <section className="mx-auto max-w-3xl px-4 pb-16">
         <div className="card p-8 text-center shadow-[4px_4px_0_var(--ink)]">
-          <h2 className="text-2xl font-extrabold">Built by Rutvik and Ritvik</h2>
+          <h2 className="text-2xl font-extrabold">Built by Rutvik Deshpande and Ritvik Upadhyay</h2>
           <p className="mt-3 text-muted">
-            Two students at Mountain House High School. We used Next.js, Google Gemini, Supabase and Vercel, and every site is written from what the owner told us.
+            Two students at Mountain House High School (MHHS). We used Next.js, Google Gemini, Supabase and Vercel, and every site is written from what the owner told us.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link href="/#explore" className="btn btn-primary">See live examples</Link>
