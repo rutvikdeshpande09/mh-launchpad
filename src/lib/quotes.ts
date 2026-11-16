@@ -8,7 +8,7 @@ export interface Quote {
 export const QUOTES: Quote[] = [
   {
     text: "If we have a passion, definitely the outcome comes like that. If we really like to do and we are doing, that means that is with the outcome definitely comes like something very special.",
-    who: "A local home florist, speaking about her work",
+    who: "A local home florist",
   },
   {
     text: "The website was easy to navigate, the design was clean, professional and visually appealing, and everything felt very user friendly. This is a great tool to help local businesses promote themselves.",
