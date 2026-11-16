@@ -29,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/creations" className="rounded-lg px-3 py-1.5 hover:bg-ink hover:text-background">My creations</Link>
               <Link href="/owner" className="rounded-lg px-3 py-1.5 hover:bg-ink hover:text-background">For businesses</Link>
               <Link href="/ambassador" className="rounded-lg px-3 py-1.5 hover:bg-ink hover:text-background">Ambassadors</Link>
+              <Link href="/about" className="rounded-lg px-3 py-1.5 hover:bg-ink hover:text-background">About</Link>
             </div>
           </nav>
         </header>
